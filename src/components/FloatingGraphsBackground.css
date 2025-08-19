@@ -1,0 +1,29 @@
+/* This container will hold all the floating icons and sit behind your content */
+.background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0; 
+  overflow: hidden;
+  /* UPDATED LINE: 
+    Added !important to ensure this background color overrides any other
+    background colors (like from Tailwind's default body styles).
+  */
+  background: #111827 !important; 
+}
+
+/* Base styles for each floating icon */
+.floating-icon {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.06); 
+  transition: transform 0.1s ease-out; /* Smooth out the repulsion effect */
+}
+
+/* Remove the keyframe animation as we are now using React state for animation */
+/* 
+@keyframes float {
+  ...
+}
+*/
