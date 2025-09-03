@@ -1,0 +1,33 @@
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const fixDatabase = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {});
+    console.log('Connected to MongoDB');
+
+    const db = mongoose.connection.db;
+    
+    // Drop the old username index
+    try {
+      await db.collection('users').dropIndex('username_1');
+      console.log('Dropped old username index');
+    } catch (err) {
+      console.log('Username index may not exist or already dropped');
+    }
+
+    // Clear all users to start fresh (since we have conflicting data)
+    await db.collection('users').deleteMany({});
+    console.log('Cleared all users from database');
+
+    console.log('Database cleanup completed successfully!');
+  } catch (error) {
+    console.error('Error fixing database:', error);
+  } finally {
+    mongoose.disconnect();
+  }
+};
+
+fixDatabase();
