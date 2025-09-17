@@ -1,11 +1,9 @@
-/* This container will hold all the floating icons and sit behind your content */
 .background-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -1; 
   overflow: hidden;
   transition: all 0.3s ease-in-out;
   pointer-events: none;

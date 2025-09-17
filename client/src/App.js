@@ -1,12 +1,12 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
+import { useSelector } from 'react-redux';
+import { tokenUtils } from './utils/auth';
 
 // Import Components
 import FloatingGraphsBackground from './components/FloatingGraphsBackground'; 
-import { ThemeProvider } from './contexts/ThemeContext';
 
 // Import Pages
 import LandingPage from './pages/LandingPage';
@@ -20,34 +20,49 @@ import ChartStudio from './pages/ChartStudio';
 import UserProfile from './pages/UserProfile';
 import UserManagement from './components/UserManagement';
 
+// Protected route component for authenticated users
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = tokenUtils.isAuthenticated();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
 // Helper component to protect routes that are only for admins
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const user = jwtDecode(token);
-      // Check if the decoded token has a user object with the 'admin' role
-      if (user.user?.role === 'admin') {
-        return children; // If they are an admin, show the component
-      }
-    } catch (error) {
-      console.error("Invalid token:", error);
-      // If token is invalid, clear it and redirect
-      localStorage.removeItem('token');
-      return <Navigate to="/login" />;
-    }
+  const isAuthenticated = tokenUtils.isAuthenticated();
+  const isAdmin = tokenUtils.isAdmin();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
-  // If not an admin or not logged in, redirect them away
-  return <Navigate to="/dashboard" />;
+  
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
 };
 
 // This is your main App component
 function App() {
-  // IMPORTANT: You've already set your actual Google Client ID
-  const googleClientId = "676684150870-3e1jfjhl1ccimctf9vs6jd95pp7u0hbe.apps.googleusercontent.com";
+  const isDark = useSelector(state => state.theme.isDark);
+
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+  }, [isDark]);
+
+  // Use environment variable for Google Client ID
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   return (
-    <ThemeProvider>
       <GoogleOAuthProvider clientId={googleClientId}>
         <Router>
           {/* The floating background component sits here, behind all other content */}
@@ -62,11 +77,31 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
               
-              {/* User Dashboard Route */}
-              <Route path="/dashboard" element={<Dashboard />} />
+              {/* User Dashboard Route - Protected */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
               
-              {/* User Profile Route */}
-              <Route path="/profile" element={<UserProfile />} />
+              {/* User Profile Route - Protected */}
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Chart Studio Route - Public with internal auth checks */}
+              <Route 
+                path="/chart-studio" 
+                element={<ChartStudio />} 
+              />
               
               {/* User Management Route - Admin Only */}
               <Route 
@@ -77,9 +112,6 @@ function App() {
                   </AdminRoute>
                 } 
               />
-              
-              {/* Chart Studio Route */}
-              <Route path="/chart-studio" element={<ChartStudio />} />
 
               {/* Admin-Only Route */}
               <Route 
@@ -104,7 +136,6 @@ function App() {
         </div>
         </Router>
       </GoogleOAuthProvider>
-    </ThemeProvider>
   );
 }
 

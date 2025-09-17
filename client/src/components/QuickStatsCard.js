@@ -7,13 +7,13 @@ const QuickStatsCard = ({ title, value, icon: Icon, color, subtitle, trend = nul
   const colors = getColorClasses(color);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+    <div className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">{title}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm font-medium mb-1">{title}</p>
           <p className={`text-3xl font-bold ${colors.text} mb-1`}>{value}</p>
           {subtitle && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
           )}
           {trend && (
             <div className={`flex items-center gap-1 mt-2 text-xs ${
