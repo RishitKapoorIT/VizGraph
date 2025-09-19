@@ -7,7 +7,7 @@ const debugLoginResponse = async () => {
     
     const response = await axios.post('http://localhost:5000/api/auth/login', {
       email: 'admin@admin.com',
-      password: 'password'
+      password: 'admin123'
     });
     
     console.log('✅ Login API Response:');

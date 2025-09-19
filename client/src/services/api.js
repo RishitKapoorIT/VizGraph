@@ -66,8 +66,9 @@ export const getAllUsers = () => API.get('admin/users');
 // Fetches user statistics with analysis counts (Admin only).
 export const getUserStats = () => API.get('admin/user-stats');
 
-// Creates initial admin user (one-time setup).
-export const setupAdmin = () => API.post('admin/setup');
+// Creates initial admin user (one-time setup). Defaults align with AdminSetup UI and server route.
+export const setupAdmin = (payload = { email: 'admin@admin.com', password: 'admin123', name: 'Administrator' }) =>
+  API.post('admin/setup', payload);
 
 // Deletes a user by ID.
 export const deleteUser = (id) => API.delete(`admin/users/${id}`);

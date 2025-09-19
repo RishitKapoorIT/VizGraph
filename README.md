@@ -99,7 +99,7 @@ node createAdmin.js
 
 This creates an admin user with:
 - **Email**: admin@admin.com
-- **Password**: password
+- **Password**: admin123
 
 ### 5. Start the Application
 

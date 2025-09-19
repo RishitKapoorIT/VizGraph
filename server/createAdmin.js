@@ -34,7 +34,7 @@ const createAdmin = async () => {
 
     // Create admin user
     const saltRounds = 12;
-    const hashedPassword = await bcryptjs.hash('password', saltRounds);
+    const hashedPassword = await bcryptjs.hash('admin123', saltRounds);
 
     const admin = new User({
       name: 'Admin',
@@ -46,7 +46,7 @@ const createAdmin = async () => {
     await admin.save();
     console.log('✅ Admin user created successfully!');
     console.log('📧 Email: admin@admin.com');
-    console.log('🔑 Password: password');
+    console.log('🔑 Password: admin123');
 
   } catch (error) {
     console.error('❌ Error creating admin:', error.message);

@@ -19,7 +19,7 @@ import UploadZone from '../components/UploadZone';
 import Chart3D from '../components/Chart3D';
 import ThemeToggle from '../components/ThemeToggle';
 import { useSelector } from 'react-redux';
-import { uploadFile, uploadFileDemo, saveAnalysis, updateAnalysis, getFileData, generateAISummary } from '../services/api';
+import { uploadFile, uploadFileDemo, saveAnalysis, updateAnalysis, generateAISummary } from '../services/api';
 import { FiBarChart2, FiPieChart, FiTrendingUp, FiDownload, FiSave, FiArrowLeft, FiCircle, FiTarget, FiGrid, FiHexagon, FiZap, FiBox, FiGlobe } from 'react-icons/fi';
 
 // Register Chart.js components
@@ -343,6 +343,11 @@ const ChartStudio = () => {
   const handleSaveAnalysis = async () => {
     if (!data) {
       setError('No data available to save.');
+      return;
+    }
+
+    if (!analysisName || analysisName.trim() === '') {
+      setError('Please enter a name for your analysis before saving.');
       return;
     }
 
@@ -911,21 +916,33 @@ const ChartStudio = () => {
 
             {/* Analysis Name */}
             <div className="mt-6">
-              <label htmlFor="analysis-name" className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">Analysis Name</label>
+              <label htmlFor="analysis-name" className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">
+                Analysis Name <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 id="analysis-name"
                 value={analysisName}
                 onChange={(e) => setAnalysisName(e.target.value)}
-                className="w-full p-2 rounded border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter a name for your analysis (e.g., Sales Report 2024)"
+                className={`w-full p-2 rounded border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                  !analysisName && error && error.includes('name') ? 'border-red-500 dark:border-red-400' : ''
+                }`}
               />
+              {!analysisName && (
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Required to save your analysis
+                </p>
+              )}
             </div>
 
             {/* Save and Download Buttons */}
             <div className="mt-6 flex flex-col gap-4">
               <button 
                 onClick={handleSaveAnalysis} 
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors shadow-sm"
+                disabled={!data || !analysisName}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-sm"
+                title={!data ? "No data to save" : !analysisName ? "Please enter an analysis name" : "Save your analysis"}
               >
                 <FiSave /> {isEditing ? 'Update Analysis' : 'Save Analysis'}
               </button>

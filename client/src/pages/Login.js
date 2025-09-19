@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { FiLogIn, FiMail, FiLock, FiHome } from 'react-icons/fi';
+import { FiLogIn, FiMail, FiLock, FiHome, FiTool } from 'react-icons/fi';
 import ThemeToggle from '../components/ThemeToggle';
+import GoogleAuthTest from '../components/GoogleAuthTest';
 // Make sure this path is correct for your project structure
 import { loginUser, googleAuth, setupAdmin } from '../services/api';
 
@@ -14,6 +15,7 @@ function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
+  const [showDebug, setShowDebug] = useState(false);
   const navigate = useNavigate();
 
   const { email, password } = formData;
@@ -138,16 +140,34 @@ function Login() {
         <div className="text-center">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Welcome Back</h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">Sign in to continue to VizGraph</p>
+            
+            {/* Debug Toggle */}
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="mt-2 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline"
+            >
+              <FiTool className="inline mr-1" size={12} />
+              {showDebug ? 'Hide' : 'Show'} Google Auth Debug
+            </button>
         </div>
 
-        {/* Google Login Button */}
-        <div className="flex justify-center">
-           <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleFailure}
-              useOneTap
-            />
-        </div>
+        {/* Google Auth Debug Panel */}
+        {showDebug && (
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+            <GoogleAuthTest />
+          </div>
+        )}
+
+        {/* Normal Google Login Button */}
+        {!showDebug && (
+          <div className="flex justify-center">
+             <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleFailure}
+                useOneTap
+              />
+          </div>
+        )}
 
         <div className="flex items-center">
           <div className="flex-grow bg-slate-300 dark:bg-slate-600 h-px"></div>

@@ -1552,42 +1552,54 @@ app.post('/api/chart/download', authenticateToken, async (req, res) => {
 // Admin setup with simple credentials for internship project
 app.post('/api/admin/setup', async (req, res) => {
   try {
+    // If an admin already exists, report the REAL email back
     const existingAdmin = await User.findOne({ role: 'admin' });
     if (existingAdmin) {
       return sendSuccess(res, 'Admin user already exists', {
-        email: 'admin@vizgraph.com',
-        password: 'admin123',
-        note: 'Use these credentials to login as admin'
+        email: existingAdmin.email,
+        note: 'An admin account already exists. Use this email to login. If you forgot the password, use the Forgot Password flow.'
       });
     }
 
-    const saltRounds = 10;
-    const password = 'admin123'; // Simple password for internship
+    // Allow overriding via request body; default to the values shown in the client AdminSetup
+    const {
+      email = 'admin@admin.com',
+      password = 'admin123',
+      name = 'Admin User'
+    } = req.body || {};
+
+    const saltRounds = 10; // keep it fast for development
     const hashedPassword = await bcryptjs.hash(password, saltRounds);
 
     const admin = new User({
-      name: 'Admin User',
-      email: 'admin@vizgraph.com',
+      name,
+      email,
       password: hashedPassword,
       role: 'admin'
     });
-    
+
     await admin.save();
-    
-    logger.info('Admin user created', { 
-      email: admin.email, 
-      requestId: req.id 
+
+    logger.info('Admin user created', {
+      email: admin.email,
+      requestId: req.id
     });
-    
-    sendSuccess(res, 'Admin user created successfully', {
-      email: 'admin@vizgraph.com',
-      password: 'admin123',
-      note: 'Save these credentials for admin login'
-    }, 201);
+
+    // For development convenience, return the credentials used
+    sendSuccess(
+      res,
+      'Admin user created successfully',
+      {
+        email,
+        password,
+        note: 'Use these credentials to login, then change the password.'
+      },
+      201
+    );
   } catch (error) {
-    logger.error('Admin setup error', { 
-      requestId: req.id, 
-      error: error.message 
+    logger.error('Admin setup error', {
+      requestId: req.id,
+      error: error.message
     });
     sendError(res, 'Server error during admin setup', 500, 'ADMIN_SETUP_ERROR');
   }
