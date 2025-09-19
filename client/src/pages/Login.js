@@ -1,9 +1,10 @@
+
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { FiLogIn, FiMail, FiLock, FiHome, FiTool } from 'react-icons/fi';
+import { FiLogIn, FiMail, FiLock, FiHome } from 'react-icons/fi';
 import ThemeToggle from '../components/ThemeToggle';
-import GoogleAuthTest from '../components/GoogleAuthTest';
 // Make sure this path is correct for your project structure
 import { loginUser, googleAuth, setupAdmin } from '../services/api';
 
@@ -15,7 +16,6 @@ function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
-  const [showDebug, setShowDebug] = useState(false);
   const navigate = useNavigate();
 
   const { email, password } = formData;
@@ -43,16 +43,9 @@ function Login() {
     setError('');
     try {
       const res = await loginUser(formData);
-      // Fix: Backend returns data in res.data.data.token format
-      const token = res.data.data?.token || res.data.token;
-      if (token) {
-        localStorage.setItem('token', token);
-        setIsLoading(false);
-        navigate('/dashboard');
-      } else {
-        setError('Login response missing token. Please try again.');
-        setIsLoading(false);
-      }
+      localStorage.setItem('token', res.data.token);
+      setIsLoading(false);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
       setIsLoading(false);
@@ -65,15 +58,9 @@ function Login() {
     try {
       // Send the Google token to your backend
       const res = await googleAuth({ token: googleToken });
-      // Fix: Backend returns data in res.data.data.token format  
-      const token = res.data.data?.token || res.data.token;
-      if (token) {
-        localStorage.setItem('token', token);
-        navigate('/dashboard');
-      } else {
-        setError('Google Sign-In response missing token. Please try again.');
-        setIsLoading(false);
-      }
+      // Your backend should verify the token and return your own app token
+      localStorage.setItem('token', res.data.token);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Google Sign-In failed.');
       setIsLoading(false);
@@ -122,13 +109,31 @@ function Login() {
   };
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-transparent text-slate-800 dark:text-slate-200 overflow-hidden">
+    <div className="relative flex items-center justify-center min-h-screen bg-transparent text-gray-900 dark:text-white overflow-hidden">
+      {/* Enhanced animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Large gradient orbs */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 dark:from-blue-500/5 dark:to-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-500/20 dark:from-purple-500/5 dark:to-pink-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        
+        {/* Geometric patterns */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent dark:from-blue-800/20 dark:to-transparent rounded-lg rotate-12 animate-pulse delay-700"></div>
+        <div className="absolute bottom-32 right-32 w-24 h-24 bg-gradient-to-br from-purple-200/30 to-transparent dark:from-purple-800/20 dark:to-transparent rounded-full animate-pulse delay-300"></div>
+        <div className="absolute top-1/3 right-20 w-16 h-16 bg-gradient-to-br from-green-200/30 to-transparent dark:from-green-800/20 dark:to-transparent rounded-lg rotate-45 animate-pulse delay-1200"></div>
+        
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-30 dark:opacity-10" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.3) 1px, transparent 0)`,
+          backgroundSize: '50px 50px'
+        }}></div>
+      </div>
       
       {/* Navigation - Positioned at top */}
       <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-700/50 transition-all duration-300 hover:bg-slate-700/80"
+          className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:bg-white dark:hover:bg-gray-800"
         >
           <FiHome size={18} />
           <span className="text-sm font-medium">Back to Home</span>
@@ -136,61 +141,43 @@ function Login() {
         <ThemeToggle />
       </div>
       
-      <div className="w-full max-w-md p-8 space-y-6 bg-white/90 dark:bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-xl border border-slate-200/50 dark:border-slate-700/50">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white/90 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
         <div className="text-center">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Welcome Back</h2>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">Sign in to continue to VizGraph</p>
-            
-            {/* Debug Toggle */}
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="mt-2 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline"
-            >
-              <FiTool className="inline mr-1" size={12} />
-              {showDebug ? 'Hide' : 'Show'} Google Auth Debug
-            </button>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">Welcome to VizGraph</h2>
+          <p className="mt-2 text-gray-500 dark:text-gray-400">Sign in to continue</p>
         </div>
 
-        {/* Google Auth Debug Panel */}
-        {showDebug && (
-          <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-            <GoogleAuthTest />
-          </div>
-        )}
-
-        {/* Normal Google Login Button */}
-        {!showDebug && (
-          <div className="flex justify-center">
-             <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleFailure}
-                useOneTap
-              />
-          </div>
-        )}
+        {/* Google Login Button */}
+        <div className="flex justify-center">
+           <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleFailure}
+              useOneTap
+            />
+        </div>
 
         <div className="flex items-center">
-          <div className="flex-grow bg-slate-300 dark:bg-slate-600 h-px"></div>
-          <span className="mx-4 text-slate-600 dark:text-slate-400">OR</span>
-          <div className="flex-grow bg-slate-300 dark:bg-slate-600 h-px"></div>
+          <div className="flex-grow bg-gray-300 dark:bg-gray-600 h-px"></div>
+          <span className="mx-4 text-gray-500 dark:text-gray-400">OR</span>
+          <div className="flex-grow bg-gray-300 dark:bg-gray-600 h-px"></div>
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="relative">
-            <FiMail className="absolute top-3 left-3 text-slate-400" />
+            <FiMail className="absolute top-3 left-3 text-gray-400" />
             <input
               type="email" name="email" value={email} onChange={handleChange}
               placeholder="Email Address"
-              className="w-full pl-10 pr-4 py-2 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               required
             />
           </div>
           <div className="relative">
-            <FiLock className="absolute top-3 left-3 text-slate-400" />
+            <FiLock className="absolute top-3 left-3 text-gray-400" />
             <input
               type="password" name="password" value={password} onChange={handleChange}
               placeholder="Password"
-              className="w-full pl-10 pr-4 py-2 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               required
             />
           </div>
@@ -218,9 +205,9 @@ function Login() {
         </form>
         
         {/* Admin Setup Section */}
-        <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-800/50 rounded-lg border border-slate-300 dark:border-slate-700">
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">🚀 First Time Setup</h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+        <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-300 dark:border-gray-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">🚀 First Time Setup</h3>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
             Click this button once to create the initial admin account (admin@admin.com / password)
           </p>
           <button
@@ -240,7 +227,7 @@ function Login() {
           )}
         </div>
         
-        <p className="text-center text-slate-600 dark:text-slate-400">
+        <p className="text-center text-gray-600 dark:text-gray-400">
           Don't have an account?{' '}
           <Link to="/register" className="font-medium text-blue-600 dark:text-blue-400 hover:underline">Sign Up</Link>
         </p>
@@ -249,16 +236,16 @@ function Login() {
       {/* Forgot Password Modal */}
       {showForgotPassword && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-700/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Reset Password</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Reset Password</h3>
               <button
                 onClick={() => {
                   setShowForgotPassword(false);
                   setForgotPasswordEmail('');
                   setForgotPasswordMessage('');
                 }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
               >
                 ×
               </button>
@@ -266,17 +253,17 @@ function Login() {
             
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div>
-                <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   Enter your email address and we'll send you instructions to reset your password.
                 </p>
                 <div className="relative">
-                  <FiMail className="absolute top-3 left-3 text-slate-400" />
+                  <FiMail className="absolute top-3 left-3 text-gray-400" />
                   <input
                     type="email"
                     value={forgotPasswordEmail}
                     onChange={(e) => setForgotPasswordEmail(e.target.value)}
                     placeholder="Enter your email address"
-                    className="w-full pl-10 pr-4 py-2 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     required
                   />
                 </div>
@@ -300,7 +287,7 @@ function Login() {
                     setForgotPasswordEmail('');
                     setForgotPasswordMessage('');
                   }}
-                  className="flex-1 py-2 px-4 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>

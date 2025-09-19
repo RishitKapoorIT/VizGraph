@@ -1,27 +1,19 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { toggleTheme as reduxToggleTheme } from '../redux/slices/themeSlice';
+import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle = ({ className = '' }) => {
-  const isDark = useSelector(state => state.theme.isDark);
-  const dispatch = useDispatch();
-
-  const handleToggle = () => {
-    dispatch(reduxToggleTheme());
-  };
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <button
-      onClick={handleToggle}
+      onClick={toggleTheme}
       className={`
-        relative inline-flex items-center justify-center p-3 rounded-xl
+        relative inline-flex items-center justify-center p-2 rounded-lg
         transition-all duration-300 ease-in-out
-        bg-gray-100 dark:bg-gray-900
-        hover:bg-gray-200 dark:hover:bg-gray-800
-        border border-gray-200 dark:border-gray-700
+        bg-gray-200 dark:bg-gray-700
+        hover:bg-gray-300 dark:hover:bg-gray-600
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-        dark:focus:ring-offset-black
-        shadow-sm hover:shadow-md dark:shadow-black/20
+        dark:focus:ring-offset-gray-800
         ${className}
       `}
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}

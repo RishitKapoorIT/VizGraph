@@ -1,258 +1,179 @@
 # VizGraph - Advanced Data Visualization Platform
 
-VizGraph is a modern, full-stack data visualization platform that allows users to upload, analyze, and create stunning visualizations from their data.
+VizGraph is a comprehensive web application for data visualization and analysis. Upload CSV files, create interactive charts, and get AI-powered insights from your data.
 
 ## 🚀 Features
 
-- **Interactive Data Visualization**: Support for 2D and 3D charts including bar, line, pie, scatter, radar, and more
-- **User Authentication**: Secure login with email/password and Google OAuth integration
-- **File Upload & Management**: Easy CSV/JSON data upload and management
-- **Analysis Saving**: Save and manage your data analyses
-- **Admin Dashboard**: Comprehensive admin panel for user and data management
-- **Responsive Design**: Beautiful UI that works on all devices
-- **Dark Mode**: Toggle between light and dark themes
+### Core Features
+- **File Upload**: Support for CSV files with drag-and-drop interface
+- **Interactive Charts**: Multiple chart types including line, bar, pie, scatter, and radar charts
+- **3D Visualizations**: Advanced 3D charts using Three.js
+- **Dynamic Analysis**: Real-time chart updates with axis selection
+- **Responsive Design**: Mobile-friendly interface with dark/light theme support
+
+### Advanced Features
+- **AI Summary**: OpenAI-powered analysis of your data trends and insights
+- **Export Options**: Download charts as PNG, export data as CSV/JSON, save AI summaries
+- **User Authentication**: Secure login with Google OAuth integration
+- **Admin Panel**: Complete user and data management system
+- **Data Management**: View, search, filter, and manage uploaded files and analyses
+
+### Technical Features
+- **Real-time Updates**: Live chart rendering and data updates
+- **Secure Authentication**: JWT-based auth with role-based access control
+- **Cloud Storage**: MongoDB Atlas for scalable data storage
+- **Modern UI**: Tailwind CSS with floating animations and smooth transitions
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18** with React Router for navigation
-- **Tailwind CSS** for styling
-- **Chart.js** and **React-Three-Fiber** for visualizations
-- **Axios** for API communication
-- **Google OAuth** for authentication
+- **React 18** - Modern UI framework
+- **Chart.js 4** - Interactive 2D charts
+- **Three.js** - 3D visualizations
+- **Tailwind CSS** - Utility-first styling
+- **React Router** - Client-side routing
+- **Axios** - HTTP client
 
 ### Backend
-- **Node.js** with Express.js
-- **MongoDB** with Mongoose ODM
-- **JWT** for authentication
-- **bcryptjs** for password hashing
-- **CORS** for cross-origin requests
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - NoSQL database
+- **Mongoose** - ODM for MongoDB
+- **JWT** - Authentication tokens
+- **bcrypt** - Password hashing
 
-## 📋 Prerequisites
+### External Services
+- **MongoDB Atlas** - Cloud database
+- **Google OAuth** - Social authentication
+- **OpenAI API** - AI-powered insights
+- **Render** - Backend hosting
+- **Netlify** - Frontend hosting
 
-Before running this application, make sure you have:
+## 📦 Installation
 
-- **Node.js** (v18 or higher)
-- **npm** (v8 or higher)
-- **MongoDB** (local installation or MongoDB Atlas)
-- **Google OAuth credentials** (optional, for Google Sign-In)
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- MongoDB Atlas account
+- Google Cloud Console project (for OAuth)
+- OpenAI API key (optional, for AI features)
 
-## 🚀 Quick Start
+### Local Development
 
-### 1. Clone the Repository
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/vizgraph.git
+   cd vizgraph
+   ```
 
-```bash
-git clone https://github.com/RishitKapoorIT/VizGraph.git
-cd VizGraph
+2. **Backend Setup**
+   ```bash
+   cd server
+   npm install
+   
+   # Create .env file
+   cp ../.env.example .env
+   # Edit .env with your credentials
+   ```
+
+3. **Frontend Setup**
+   ```bash
+   cd ../client
+   npm install
+   
+   # Create .env file for frontend
+   echo "REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id" > .env
+   ```
+
+4. **Start Development Servers**
+   ```bash
+   # Terminal 1: Backend
+   cd server
+   npm run dev
+   
+   # Terminal 2: Frontend
+   cd client
+   npm start
+   ```
+
+5. **Access the Application**
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:5000
+
+## 🌐 Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy
+1. **Backend**: Deploy to Render using `render.yaml`
+2. **Frontend**: Deploy to Netlify using `netlify.toml`
+3. **Database**: Use MongoDB Atlas
+4. **Set Environment Variables** in each platform
+
+## 📝 Environment Variables
+
+### Backend (.env)
+```
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+JWT_SECRET=your_super_secret_jwt_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+OPENAI_API_KEY=sk-your_openai_api_key (optional)
+NODE_ENV=production
 ```
 
-### 2. Install Dependencies
-
-```bash
-# Install root dependencies
-npm install
-
-# Install all dependencies (root, server, and client)
-npm run install:all
+### Frontend (client/.env)
+```
+REACT_APP_API_URL=https://your-backend.onrender.com/api
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
-### 3. Set Up Environment Variables
+## 🎯 Usage
 
-#### Server Environment (.env in /server directory)
+### For Users
+1. **Sign Up/Login**: Create an account or use Google OAuth
+2. **Upload Data**: Drag and drop CSV files or click to upload
+3. **Analyze**: Select chart type and axes for visualization
+4. **Export**: Download charts, data, or AI summaries
+5. **Manage**: View your uploaded files and analyses
 
-```bash
-cd server
-cp .env.example .env
-```
+### For Admins
+1. **Access Admin Panel**: Navigate to `/admin/dashboard` (admin role required)
+2. **User Management**: View, edit, delete users and change roles
+3. **Data Management**: Monitor and manage all files and analyses
+4. **Dashboard Stats**: View platform usage statistics
 
-Edit `server/.env`:
-```env
-NODE_ENV=development
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/vizgraph
-JWT_SECRET=your-super-secure-jwt-secret
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-CLIENT_URL=http://localhost:3000
-```
+## 🔧 API Endpoints
 
-#### Client Environment (.env in /client directory)
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/google` - Google OAuth login
 
-```bash
-cd client
-cp .env.example .env
-```
+### File Management
+- `POST /api/upload` - Upload CSV file
+- `GET /api/upload/:id` - Get file by ID
 
-Edit `client/.env`:
-```env
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
-```
+### Analysis
+- `POST /api/analysis` - Save analysis
+- `GET /api/analysis/:id` - Get analysis by ID
+- `POST /api/analysis/ai-summary/:id` - Get AI summary
+- `GET /api/analysis/stats` - Get analysis statistics
 
-### 4. Set Up Database
-
-Make sure MongoDB is running, then create an admin user:
-
-```bash
-cd server
-node createAdmin.js
-```
-
-This creates an admin user with:
-- **Email**: admin@admin.com
-- **Password**: admin123
-
-### 5. Start the Application
-
-#### Development Mode (Both Frontend and Backend)
-
-```bash
-npm run dev
-```
-
-This will start:
-- Backend server on http://localhost:5000
-- Frontend client on http://localhost:3000
-
-#### Or Start Individually
-
-```bash
-# Start backend only
-npm run server:dev
-
-# Start frontend only
-npm run client:dev
-```
-
-### 6. Access the Application
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000/api
-- **Admin Panel**: Login with admin credentials and navigate to admin dashboard
-
-## 📂 Project Structure
-
-```
-VizGraph/
-├── client/                 # React frontend
-│   ├── public/
-│   ├── src/
-│   │   ├── components/     # Reusable React components
-│   │   ├── pages/         # Page components
-│   │   ├── services/      # API service functions
-│   │   ├── utils/         # Utility functions
-│   │   └── contexts/      # React contexts
-│   ├── package.json
-│   └── .env
-├── server/                # Node.js backend
-│   ├── index.js          # Main server file
-│   ├── db.js             # Database connection
-│   ├── createAdmin.js    # Admin user creation script
-│   ├── seedData.js       # Sample data seeding script
-│   ├── package.json
-│   └── .env
-├── package.json          # Root package.json
-└── README.md
-```
-
-## 🔧 Available Scripts
-
-### Root Level
-- `npm run dev` - Start both frontend and backend in development mode
-- `npm run build` - Build the frontend for production
-- `npm run start` - Start the backend in production mode
-- `npm run install:all` - Install dependencies for all packages
-
-### Server
-- `npm run dev` - Start server with nodemon (auto-restart)
-- `npm start` - Start server in production mode
-
-### Client
-- `npm start` - Start development server
-- `npm run build` - Build for production
-- `npm test` - Run tests
-
-## 🗄️ Database Scripts
-
-```bash
-cd server
-
-# Create admin user
-node createAdmin.js
-
-# Seed sample data
-node seedData.js
-
-# Fix database issues
-node fixDatabase.js
-```
-
-## 🔐 Authentication
-
-The app supports two authentication methods:
-
-1. **Email/Password**: Traditional registration and login
-2. **Google OAuth**: Sign in with Google account
-
-### Setting Up Google OAuth
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add your domain to authorized origins
-6. Update environment variables with your credentials
-
-## 🚢 Deployment
-
-### Frontend (Netlify)
-
-1. Build the client: `cd client && npm run build`
-2. Deploy the `client/build` folder to Netlify
-3. Set environment variables in Netlify dashboard
-
-### Backend (Render/Heroku)
-
-1. Create a new web service
-2. Connect your GitHub repository
-3. Set build command: `cd server && npm install`
-4. Set start command: `cd server && npm start`
-5. Add environment variables
-
-### Database (MongoDB Atlas)
-
-1. Create a MongoDB Atlas account
-2. Create a cluster
-3. Get connection string
-4. Update `MONGO_URI` in your environment variables
-
-## 🔧 Configuration Files
-
-### Netlify Configuration (`netlify.toml`)
-```toml
-[build]
-  base = "client"
-  publish = "build"
-  command = "npm run build"
-```
-
-### Render Configuration (`render.yaml`)
-```yaml
-services:
-  - type: web
-    name: vizgraph-backend
-    env: node
-    buildCommand: cd server && npm install
-    startCommand: cd server && npm start
-```
+### Admin (Requires admin role)
+- `GET /api/admin/users` - Get all users
+- `PUT /api/admin/users/:id` - Update user
+- `DELETE /api/admin/users/:id` - Delete user
+- `GET /api/admin/dashboard-stats` - Get dashboard statistics
 
 ## 🧪 Testing
 
 ```bash
-# Run client tests
+# Run frontend tests
 cd client
 npm test
 
-# Run server tests (if you add them)
+# Test backend endpoints
 cd server
 npm test
 ```
@@ -260,52 +181,36 @@ npm test
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -m 'Add feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🐛 Troubleshooting
+## 🙏 Acknowledgments
 
-### Common Issues
+- Chart.js for excellent charting library
+- Three.js for 3D visualization capabilities  
+- OpenAI for AI-powered insights
+- Tailwind CSS for beautiful styling
+- React ecosystem for robust frontend framework
 
-1. **MongoDB Connection Issues**
-   - Ensure MongoDB is running
-   - Check connection string in `.env`
-   - Verify network access for MongoDB Atlas
+## 📧 Support
 
-2. **Google OAuth Issues**
-   - Verify client ID and secret
-   - Check authorized origins in Google Console
-   - Ensure environment variables are set
+For support, email support@vizgraph.com or create an issue on GitHub.
 
-3. **CORS Issues**
-   - Check CORS configuration in server
-   - Verify client URL in server environment
-
-4. **Build Issues**
-   - Clear node_modules and reinstall: `rm -rf node_modules && npm install`
-   - Check Node.js version compatibility
-
-### Getting Help
-
-- Check the [Issues](https://github.com/RishitKapoorIT/VizGraph/issues) page
-- Create a new issue with detailed information
-- Contact the maintainer
-
-## 🎯 Roadmap
+## 🗺️ Roadmap
 
 - [ ] Real-time collaboration features
-- [ ] Advanced chart customization
-- [ ] Data export functionality
-- [ ] API integration for external data sources
+- [ ] More chart types (heatmaps, treemaps)
+- [ ] Advanced data preprocessing
+- [ ] Custom dashboard builder
+- [ ] API for third-party integrations
 - [ ] Mobile app development
-- [ ] Advanced analytics and insights
 
 ---
 
-Built with ❤️ by [RishitKapoorIT](https://github.com/RishitKapoorIT)
+**VizGraph** - Transform your data into insights 📊✨

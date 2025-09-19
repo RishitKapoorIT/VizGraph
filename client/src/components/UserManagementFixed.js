@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useTheme } from '../contexts/ThemeContext';
 import FloatingGraphsBackground from './FloatingGraphsBackground';
 import ThemeToggle from './ThemeToggle';
 import { 
@@ -18,7 +18,7 @@ import {
 import { getAllUsers, deleteUser, updateUser } from '../services/api';
 
 const UserManagement = () => {
-    const isDark = useSelector(state => state.theme.isDark);
+    const { isDark } = useTheme();
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -148,6 +148,7 @@ const UserManagement = () => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 relative overflow-hidden">
             {/* Floating Graphs Background */}
             <FloatingGraphsBackground />
+            
             <div className="relative z-10 p-8">
                 {/* Header */}
                 <div className="mb-12">
@@ -163,6 +164,7 @@ const UserManagement = () => {
                         </div>
                         <ThemeToggle />
                     </div>
+                    
                     <div className="text-center">
                         <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-green-600 to-green-800 dark:from-white dark:via-green-200 dark:to-green-400 bg-clip-text text-transparent mb-4">
                             User Management
@@ -172,12 +174,14 @@ const UserManagement = () => {
                         </p>
                     </div>
                 </div>
+
                 {/* Error Message */}
                 {error && (
                     <div className="mb-6 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700">
                         <p className="text-red-700 dark:text-red-400">{error}</p>
                     </div>
                 )}
+
                 {/* Search and Filter */}
                 <div className="mb-6 p-6 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -192,17 +196,14 @@ const UserManagement = () => {
                                 className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                             />
                         </div>
+
                         {/* Role Filter */}
                         <div className="relative">
-                            <FaFilter className={`absolute left-3 top-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                            <FaFilter className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                             <select
                                 value={roleFilter}
                                 onChange={(e) => setRoleFilter(e.target.value)}
-                                className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
-                                    isDark
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                }`}
+                                className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                             >
                                 <option value="all">All Roles</option>
                                 <option value="user">Users</option>
@@ -210,13 +211,44 @@ const UserManagement = () => {
                                 <option value="admin">Admins</option>
                             </select>
                         </div>
+
                         {/* Stats */}
                         <div className="flex items-center justify-center">
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-blue-500">{filteredUsers.length}</div>
-                                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
                                     Total Users
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    {/* Role Filter */}
+                    <div className="relative">
+                        <FaFilter className={`absolute left-3 top-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                            className={`w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
+                                isDark
+                                    ? 'bg-gray-700 border-gray-600 text-white'
+                                    : 'bg-white border-gray-300 text-gray-900'
+                            }`}
+                        >
+                            <option value="all">All Roles</option>
+                            <option value="user">Users</option>
+                            <option value="moderator">Moderators</option>
+                            <option value="admin">Admins</option>
+                        </select>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-500">{filteredUsers.length}</div>
+                            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                Total Users
                             </div>
                         </div>
                     </div>

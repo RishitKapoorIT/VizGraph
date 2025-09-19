@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bar, Line, Pie, Doughnut, PolarArea, Radar, Scatter, Bubble } from 'react-chartjs-2';
 import {
@@ -18,8 +18,9 @@ import {
 import UploadZone from '../components/UploadZone';
 import Chart3D from '../components/Chart3D';
 import ThemeToggle from '../components/ThemeToggle';
-import { useSelector } from 'react-redux';
-import { uploadFile, uploadFileDemo, saveAnalysis, updateAnalysis, generateAISummary } from '../services/api';
+import FloatingGraphsBackground from '../components/FloatingGraphsBackground';
+import { useTheme } from '../contexts/ThemeContext';
+import { uploadFile, saveAnalysis, updateAnalysis, getFileData, generateAISummary } from '../services/api';
 import { FiBarChart2, FiPieChart, FiTrendingUp, FiDownload, FiSave, FiArrowLeft, FiCircle, FiTarget, FiGrid, FiHexagon, FiZap, FiBox, FiGlobe } from 'react-icons/fi';
 
 // Register Chart.js components
@@ -37,24 +38,11 @@ ChartJS.register(
   Filler
 );
 
-// Sample data for demonstration
-const sampleData = [
-  { Month: 'January', Sales: 4500, Revenue: 45000, Customers: 120 },
-  { Month: 'February', Sales: 5200, Revenue: 52000, Customers: 140 },
-  { Month: 'March', Sales: 4800, Revenue: 48000, Customers: 135 },
-  { Month: 'April', Sales: 6100, Revenue: 61000, Customers: 160 },
-  { Month: 'May', Sales: 7200, Revenue: 72000, Customers: 180 },
-  { Month: 'June', Sales: 6800, Revenue: 68000, Customers: 170 }
-];
-
 const ChartStudio = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const isDark = useSelector(state => state.theme.isDark);
+  const { isDark } = useTheme();
   const { analysis: editingAnalysis, demoFile, isDemoMode } = location.state || {};
-  
-  // Demo mode is simply based on location state - no session storage needed
-  const isInDemoMode = isDemoMode;
 
   // File and upload state
   const [data, setData] = useState(null);
@@ -66,10 +54,11 @@ const ChartStudio = () => {
   const [xAxis, setXAxis] = useState('');
   const [yAxis, setYAxis] = useState('');
   const [zAxis, setZAxis] = useState('');
-  const [chartType, setChartType] = useState('bar');
+  const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble', 'bar3d', 'scatter3d', 'pie3d', 'doughnut3d', 'surface3d'
 
   // Analysis state
-  const [analysisName, setAnalysisName] = useState('');
+  const [analysisName, setAnalysisName] = useState('My Analysis');
+  const [fileId, setFileId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // AI Summary state
@@ -79,8 +68,18 @@ const ChartStudio = () => {
 
   const chartRef = useRef(null);
 
+  // Sample data for demonstration
+  const sampleData = [
+    { Month: 'January', Sales: 4500, Revenue: 45000, Customers: 120 },
+    { Month: 'February', Sales: 5200, Revenue: 52000, Customers: 140 },
+    { Month: 'March', Sales: 4800, Revenue: 48000, Customers: 135 },
+    { Month: 'April', Sales: 6100, Revenue: 61000, Customers: 160 },
+    { Month: 'May', Sales: 7200, Revenue: 72000, Customers: 180 },
+    { Month: 'June', Sales: 6800, Revenue: 68000, Customers: 170 }
+  ];
+
   // Load sample data function
-  const loadSampleData = useCallback(() => {
+  const loadSampleData = () => {
     const newHeaders = Object.keys(sampleData[0]);
     const newXAxis = 'Month';
     const newYAxis = 'Sales';
@@ -92,7 +91,7 @@ const ChartStudio = () => {
     setYAxis(newYAxis);
     setZAxis(newZAxis);
     setError('');
-  }, []);
+  };
 
   // Load analysis data if editing
   useEffect(() => {
@@ -103,26 +102,26 @@ const ChartStudio = () => {
       setYAxis(editingAnalysis.settings.yAxis);
       setZAxis(editingAnalysis.settings.zAxis || '');
       setChartType(editingAnalysis.settings.chartType);
+      setFileId(editingAnalysis.fileData);
       
-      // The data is already in editingAnalysis.data
-      const fileData = editingAnalysis.data;
-      if (!fileData || !Array.isArray(fileData) || fileData.length === 0) {
-        setError('No data available in the selected analysis for editing.');
-        return;
-      }
+      // Fetch the file data
+      const loadFileData = async () => {
+        try {
+          const response = await getFileData(editingAnalysis.fileData);
+          setData(response.data.data);
+          setHeaders(Object.keys(response.data.data[0] || {}));
+        } catch (error) {
+          console.error('Error loading file data:', error);
+          setError('Failed to load file data for editing');
+        }
+      };
 
-      setData(fileData);
-      setHeaders(Object.keys(fileData[0] || {}));
-    } else if (isInDemoMode && demoFile) {
+      loadFileData();
+    } else if (isDemoMode && demoFile) {
       // Handle demo mode - auto-load the demo file
       handleFileUpload(demoFile);
-    } else if (isInDemoMode && !demoFile) {
-      // Handle demo mode without file - load sample data
-      loadSampleData();
     }
-  }, [editingAnalysis, isInDemoMode, demoFile, loadSampleData]);
-
-  // No cleanup needed since route is public
+  }, [editingAnalysis, isDemoMode, demoFile]);
 
   const handleFileUpload = async (fileToUpload) => {
     if (!fileToUpload) {
@@ -138,51 +137,20 @@ const ChartStudio = () => {
     formData.append('file', fileToUpload);
 
     try {
-      let response;
-      
-      // Try regular upload first, fallback to demo upload if auth fails
-      try {
-        response = await uploadFile(formData);
-      } catch (authError) {
-        if (authError.response?.status === 401 || authError.response?.status === 403) {
-          console.log('Auth failed, trying demo upload...');
-          response = await uploadFileDemo(formData);
-        } else {
-          throw authError;
-        }
-      }
-      
-      console.log('Upload response:', response.data); // Debug log
-      
-      const responseData = response.data.file?.data || response.data.data;
+      const response = await uploadFile(formData);
+      const responseData = response.data.data;
       
       if (responseData && responseData.length > 0) {
-        // Validate that the data has actual content
-        const hasValidData = responseData.some(row => 
-          Object.values(row).some(value => 
-            value !== null && value !== undefined && value.toString().trim() !== ''
-          )
-        );
-        
-        if (hasValidData) {
-          setData(responseData);
-          const dataHeaders = Object.keys(responseData[0]);
-          setHeaders(dataHeaders);
-          setXAxis(dataHeaders[0] || ''); // Default to first column
-          setYAxis(dataHeaders[1] || ''); // Default to second column
-          setZAxis(dataHeaders[2] || ''); // Default to third column
-          setError(''); // Clear any previous errors
-          console.log('File uploaded successfully, data:', responseData.length, 'rows'); // Debug log
-        } else {
-          console.log('No valid data in response:', responseData); // Debug log
-          setError('The uploaded file contains no valid data. Please ensure your file has data in the rows.');
-        }
+        setData(responseData);
+        setHeaders(Object.keys(responseData[0]));
+        setXAxis(Object.keys(responseData[0])[0] || ''); // Default to first column
+        setYAxis(Object.keys(responseData[0])[1] || ''); // Default to second column
+        setZAxis(Object.keys(responseData[0])[2] || ''); // Default to third column
+        setFileId(response.data.fileId); // Save the fileId
       } else {
-        console.log('No data in response:', response.data); // Debug log
-        setError('No data found in the uploaded file. Please ensure your file contains data rows with values.');
+        setError('No data found in the uploaded file.');
       }
     } catch (err) {
-      console.error('Upload error:', err); // Debug log
       setError(err.response?.data?.message || 'File upload failed.');
     } finally {
       setUploading(false);
@@ -341,26 +309,14 @@ const ChartStudio = () => {
   };
 
   const handleSaveAnalysis = async () => {
-    if (!data) {
-      setError('No data available to save.');
+    if (!fileId) {
+      setError('Cannot save analysis without a file.');
       return;
     }
-
-    if (!analysisName || analysisName.trim() === '') {
-      setError('Please enter a name for your analysis before saving.');
-      return;
-    }
-
-    // In demo mode, provide a helpful message instead of trying to save
-    if (isInDemoMode) {
-      alert('Demo Mode: To save your analysis, please sign up for a free account! Your charts will be preserved and you can access them anytime.');
-      return;
-    }
-
     const is3DChart = ['bar3d', 'scatter3d', 'pie3d', 'doughnut3d', 'surface3d'].includes(chartType);
     const analysisData = {
       name: analysisName,
-      data: data,
+      fileDataId: fileId,
       settings: {
         xAxis,
         yAxis,
@@ -433,7 +389,7 @@ const ChartStudio = () => {
   const renderChart = () => {
     if (!chartData && !['bar3d', 'scatter3d', 'pie3d', 'doughnut3d', 'surface3d'].includes(chartType)) {
       return (
-        <div className="w-full h-full flex items-center justify-center text-slate-500 dark:text-slate-400">
+        <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
           <div className="text-center">
             <p className="mb-2">No chart data available</p>
             <p className="text-sm">Please ensure X-Axis and Y-Axis are selected</p>
@@ -558,7 +514,7 @@ const ChartStudio = () => {
           return <Chart3D type="surface" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} />;
         default:
           return (
-            <div className="w-full h-full flex items-center justify-center text-slate-500 dark:text-slate-400">
+            <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
               <p>Unsupported chart type: {chartType}</p>
             </div>
           );
@@ -577,41 +533,50 @@ const ChartStudio = () => {
   };
 
   return (
-    <div className="min-h-screen bg-transparent relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 relative overflow-hidden">
+      {/* Floating Graphs Background - with proper z-index for charts */}
+      <div style={{ zIndex: -1 }}>
+        <FloatingGraphsBackground />
+      </div>
+      
+      {/* Enhanced animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Large gradient orbs */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 dark:from-blue-500/5 dark:to-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-500/20 dark:from-purple-500/5 dark:to-pink-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        
+        {/* Geometric patterns */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent dark:from-blue-800/20 dark:to-transparent rounded-lg rotate-12 animate-pulse delay-700"></div>
+        <div className="absolute bottom-32 right-32 w-24 h-24 bg-gradient-to-br from-purple-200/30 to-transparent dark:from-purple-800/20 dark:to-transparent rounded-full animate-pulse delay-300"></div>
+        <div className="absolute top-1/3 right-20 w-16 h-16 bg-gradient-to-br from-green-200/30 to-transparent dark:from-green-800/20 dark:to-transparent rounded-lg rotate-45 animate-pulse delay-1200"></div>
+        
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-30 dark:opacity-10" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.3) 1px, transparent 0)`,
+          backgroundSize: '50px 50px'
+        }}></div>
+      </div>
       
       {/* Simplified Header */}
-            {/* Simplified Header */}
-            <div className="z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-lg border-b border-slate-200 dark:border-slate-700/50 sticky top-0">
+      <div className="z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => {
-                  // Simple back navigation - no cleanup needed
-                  navigate(-1);
-                }}
-                className="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
                 <FiArrowLeft size={16} />
                 <span className="text-sm">Back</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   {isEditing ? 'Edit Chart' : 'Chart Studio'}
-                  {isInDemoMode && (
-                    <span className="ml-3 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200 dark:border-blue-700">
-                      Demo Mode
-                    </span>
-                  )}
                 </h1>
                 {data && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {data.length} rows • {headers.length} columns
-                    {isInDemoMode && (
-                      <span className="ml-2 text-blue-600 dark:text-blue-400">
-                        • Sample Data
-                      </span>
-                    )}
                   </p>
                 )}
               </div>
@@ -623,37 +588,14 @@ const ChartStudio = () => {
         </div>
       </div>
 
-      {/* Demo Mode Banner */}
-      {isInDemoMode && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-b border-blue-200 dark:border-blue-800">
-          <div className="max-w-7xl mx-auto px-6 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <span className="font-semibold">Demo Mode:</span> You're exploring with sample data. 
-                  <span className="hidden sm:inline"> Charts won't be saved unless you sign up for a free account.</span>
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/register')}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Sign Up Free
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="p-6">
       {!data ? (
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               Create Your Visualization
             </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-300 mb-6">
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
               Upload your data file to get started with beautiful charts and graphs
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -664,8 +606,8 @@ const ChartStudio = () => {
                 <FiZap className="w-5 h-5" />
                 Try Sample Data
               </button>
-              <span className="text-slate-500 dark:text-slate-400">or</span>
-              <span className="text-slate-800 dark:text-slate-300 font-medium">Upload your own file below</span>
+              <span className="text-gray-500 dark:text-gray-400">or</span>
+              <span className="text-gray-700 dark:text-gray-300 font-medium">Upload your own file below</span>
             </div>
           </div>
           <UploadZone onFileUpload={handleFileUpload} />
@@ -679,7 +621,7 @@ const ChartStudio = () => {
               <FiBarChart2 className="text-xl" />
               Try Sample Data
             </button>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               See how charts work with our sample sales data
             </p>
           </div>
@@ -694,8 +636,8 @@ const ChartStudio = () => {
           )}
           {error && (
             <div className="mt-8 max-w-2xl mx-auto">
-              <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-xl backdrop-blur-sm">
-                <p className="text-red-300 text-center font-medium">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                <p className="text-red-600 dark:text-red-400 text-center font-medium">{error}</p>
               </div>
             </div>
           )}
@@ -703,17 +645,17 @@ const ChartStudio = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Controls Panel */}
-          <div className="lg:col-span-1 bg-white/80 dark:bg-slate-800/50 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-            <h3 className="text-xl font-bold mb-6 text-slate-800 dark:text-white">Chart Controls</h3>
+          <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Chart Controls</h3>
             
             {/* X-Axis Selector */}
             <div className="mb-4">
-              <label htmlFor="x-axis" className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">X-Axis</label>
+              <label htmlFor="x-axis" className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">X-Axis</label>
               <select 
                 id="x-axis" 
                 value={xAxis} 
                 onChange={e => setXAxis(e.target.value)} 
-                className="w-full p-2 rounded border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               >
                 {headers.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
@@ -721,12 +663,12 @@ const ChartStudio = () => {
 
             {/* Y-Axis Selector */}
             <div className="mb-6">
-              <label htmlFor="y-axis" className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">Y-Axis</label>
+              <label htmlFor="y-axis" className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Y-Axis</label>
               <select 
                 id="y-axis" 
                 value={yAxis} 
                 onChange={e => setYAxis(e.target.value)} 
-                className="w-full p-2 rounded border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               >
                 {headers.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
@@ -735,12 +677,12 @@ const ChartStudio = () => {
             {/* Z-Axis Selector (for 3D charts) */}
             {['bar3d', 'scatter3d', 'pie3d', 'doughnut3d', 'surface3d'].includes(chartType) && (
               <div className="mb-6">
-                <label htmlFor="z-axis" className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">Z-Axis</label>
+                <label htmlFor="z-axis" className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Z-Axis</label>
                 <select
                   id="z-axis"
                   value={zAxis}
                   onChange={e => setZAxis(e.target.value)}
-                  className="w-full p-2 rounded border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                 >
                   {headers.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
@@ -749,40 +691,40 @@ const ChartStudio = () => {
 
             {/* Chart Type Selector */}
             <div>
-              <h4 className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">Chart Type</h4>
+              <h4 className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Chart Type</h4>
               
               {/* Basic Charts */}
               <div className="mb-3">
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Basic Charts</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Basic Charts</p>
                 <div className="grid grid-cols-3 gap-2">
                   <button 
-                    onClick={() => setChartType('bar')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('bar')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'bar' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Bar Chart"
                   >
                     <FiBarChart2 className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('line')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('line')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'line' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Line Chart"
                   >
                     <FiTrendingUp className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('pie')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('pie')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'pie' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Pie Chart"
                   >
@@ -793,36 +735,36 @@ const ChartStudio = () => {
 
               {/* Advanced Charts */}
               <div className="mb-3">
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Advanced Charts</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Advanced Charts</p>
                 <div className="grid grid-cols-3 gap-2">
                   <button 
-                    onClick={() => setChartType('doughnut')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('doughnut')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'doughnut' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Doughnut Chart"
                   >
                     <FiCircle className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('polarArea')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('polarArea')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'polarArea' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Polar Area Chart"
                   >
                     <FiTarget className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('radar')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('radar')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'radar' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Radar Chart"
                   >
@@ -833,25 +775,25 @@ const ChartStudio = () => {
 
               {/* Scientific Charts */}
               <div className="mb-3">
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Scientific Charts</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Scientific Charts</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button 
-                    onClick={() => setChartType('scatter')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('scatter')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'scatter' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Scatter Plot"
                   >
                     <FiGrid className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('bubble')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('bubble')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'bubble' 
                         ? 'bg-blue-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="Bubble Chart"
                   >
@@ -862,25 +804,25 @@ const ChartStudio = () => {
 
               {/* 3D Charts */}
               <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">3D Charts</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">3D Charts</p>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <button 
-                    onClick={() => setChartType('bar3d')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('bar3d')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'bar3d' 
                         ? 'bg-purple-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="3D Bar Chart"
                   >
                     <FiBox className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('scatter3d')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('scatter3d')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'scatter3d' 
                         ? 'bg-purple-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="3D Scatter Plot"
                   >
@@ -889,22 +831,22 @@ const ChartStudio = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button 
-                    onClick={() => setChartType('pie3d')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('pie3d')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'pie3d' 
                         ? 'bg-purple-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="3D Pie Chart"
                   >
                     <FiPieChart className="mx-auto" />
                   </button>
                   <button 
-                    onClick={() => setChartType('doughnut3d')}
-                    className={`p-3 rounded-lg transition-colors ${ 
+                    onClick={() => setChartType('doughnut3d')} 
+                    className={`p-3 rounded-lg transition-colors ${
                       chartType === 'doughnut3d' 
                         ? 'bg-purple-600 text-white' 
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                     }`}
                     title="3D Doughnut Chart"
                   >
@@ -916,33 +858,21 @@ const ChartStudio = () => {
 
             {/* Analysis Name */}
             <div className="mt-6">
-              <label htmlFor="analysis-name" className="block mb-2 font-semibold text-slate-700 dark:text-slate-300">
-                Analysis Name <span className="text-red-500">*</span>
-              </label>
+              <label htmlFor="analysis-name" className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Analysis Name</label>
               <input
                 type="text"
                 id="analysis-name"
                 value={analysisName}
                 onChange={(e) => setAnalysisName(e.target.value)}
-                placeholder="Enter a name for your analysis (e.g., Sales Report 2024)"
-                className={`w-full p-2 rounded border bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 ${
-                  !analysisName && error && error.includes('name') ? 'border-red-500 dark:border-red-400' : ''
-                }`}
+                className="w-full p-2 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               />
-              {!analysisName && (
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Required to save your analysis
-                </p>
-              )}
             </div>
 
             {/* Save and Download Buttons */}
             <div className="mt-6 flex flex-col gap-4">
               <button 
                 onClick={handleSaveAnalysis} 
-                disabled={!data || !analysisName}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-sm"
-                title={!data ? "No data to save" : !analysisName ? "Please enter an analysis name" : "Save your analysis"}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors shadow-sm"
               >
                 <FiSave /> {isEditing ? 'Update Analysis' : 'Save Analysis'}
               </button>
@@ -950,7 +880,7 @@ const ChartStudio = () => {
               <button 
                 onClick={handleGenerateAISummary}
                 disabled={!data || isGeneratingSummary}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-sm"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-sm"
               >
                 {isGeneratingSummary ? (
                   <>
@@ -966,12 +896,12 @@ const ChartStudio = () => {
               
               {/* Download Options */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Download Options</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Download Options</p>
                 
                 <button 
                   onClick={handleDownloadPNG}
                   disabled={!chartData}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
                 >
                   <FiDownload /> PNG Chart
                 </button>
@@ -979,7 +909,7 @@ const ChartStudio = () => {
                 <button 
                   onClick={handleDownloadCSV}
                   disabled={!data || data.length === 0}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
                 >
                   <FiDownload /> CSV Data
                 </button>
@@ -987,7 +917,7 @@ const ChartStudio = () => {
                 <button 
                   onClick={handleDownloadJSON}
                   disabled={!data || !analysisName}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
                 >
                   <FiDownload /> JSON Analysis
                 </button>
@@ -995,7 +925,7 @@ const ChartStudio = () => {
                 <button 
                   onClick={handleDownloadSummary}
                   disabled={!aiSummary}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
                 >
                   <FiDownload /> AI Summary
                 </button>
@@ -1004,9 +934,9 @@ const ChartStudio = () => {
           </div>
 
           {/* Chart Display */}
-          <div className="lg:col-span-3 bg-white/50 dark:bg-slate-900/80 p-6 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700/50 min-h-[600px] backdrop-blur-sm">
+          <div className="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 min-h-[600px]">            
             {/* Chart Container */}
-            <div className="w-full h-[500px] bg-white dark:bg-slate-800/50 rounded-lg flex items-center justify-center mb-6">
+            <div className="w-full h-[500px] bg-white dark:bg-gray-900 rounded-lg flex items-center justify-center mb-6">
               <div className="w-full h-full p-4">
                 {chartData ? (
                   <div className="w-full h-full min-h-[400px] relative">
@@ -1015,7 +945,7 @@ const ChartStudio = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-slate-500 dark:text-slate-400">
+                  <div className="text-center text-gray-500 dark:text-gray-400">
                     <p>No chart data available. Please select X and Y axes.</p>
                   </div>
                 )}
@@ -1027,10 +957,10 @@ const ChartStudio = () => {
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-700">
                 <div className="flex items-center gap-2 mb-4">
                   <FiZap className="text-purple-600 dark:text-purple-400" />
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-white">AI Summary</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Summary</h3>
                 </div>
                 <div className="prose dark:prose-invert max-w-none">
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                     {aiSummary}
                   </p>
                 </div>

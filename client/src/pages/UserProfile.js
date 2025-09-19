@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiSave, FiArrowLeft, FiEdit3, FiCamera, FiShield } from 'react-icons/fi';
 import ThemeToggle from '../components/ThemeToggle';
+import FloatingGraphsBackground from '../components/FloatingGraphsBackground';
 import { getUserProfile, updateProfile } from '../services/api';
 
 const UserProfile = () => {
@@ -28,7 +29,7 @@ const UserProfile = () => {
   const fetchUserProfile = async () => {
     try {
       const response = await getUserProfile();
-      const userData = response.data.user;
+      const userData = response.data;
       setUser(userData);
       setFormData({
         name: userData.name || '',
@@ -110,17 +111,38 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading profile...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 relative overflow-hidden">
+      {/* Floating Graphs Background */}
+      <FloatingGraphsBackground />
+      
+      {/* Enhanced animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Large gradient orbs */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 dark:from-blue-500/5 dark:to-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-500/20 dark:from-purple-500/5 dark:to-pink-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        
+        {/* Geometric patterns */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent dark:from-blue-800/20 dark:to-transparent rounded-lg rotate-12 animate-pulse delay-700"></div>
+        <div className="absolute bottom-32 right-32 w-24 h-24 bg-gradient-to-br from-purple-200/30 to-transparent dark:from-purple-800/20 dark:to-transparent rounded-full animate-pulse delay-300"></div>
+        <div className="absolute top-1/3 right-20 w-16 h-16 bg-gradient-to-br from-green-200/30 to-transparent dark:from-green-800/20 dark:to-transparent rounded-lg rotate-45 animate-pulse delay-1200"></div>
+        
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-30 dark:opacity-10" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.3) 1px, transparent 0)`,
+          backgroundSize: '50px 50px'
+        }}></div>
+      </div>
 
       <div className="relative z-10 p-4 md:p-8">
         {/* Header */}
@@ -128,7 +150,7 @@ const UserProfile = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700/80 rounded-xl transition-all duration-200 shadow-lg border border-slate-200 dark:border-slate-700/50 hover:shadow-xl text-slate-700 dark:text-slate-300 w-fit backdrop-blur-sm"
+              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white w-fit"
             >
               <FiArrowLeft />
               <span className="text-sm md:text-base">Back to Dashboard</span>
@@ -138,10 +160,10 @@ const UserProfile = () => {
           </div>
           
           <div className="text-center">
-            <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-slate-800 via-blue-600 to-blue-800 dark:from-white dark:via-blue-200 dark:to-blue-400 bg-clip-text text-transparent mb-4">
+            <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-600 to-blue-800 dark:from-white dark:via-blue-200 dark:to-blue-400 bg-clip-text text-transparent mb-4">
               User Profile
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm md:text-lg">
+            <p className="text-gray-600 dark:text-gray-400 text-sm md:text-lg">
               Manage your account settings and preferences
             </p>
           </div>
@@ -149,7 +171,7 @@ const UserProfile = () => {
 
         {/* Profile Card */}
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-6 md:p-8 shadow-lg border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 shadow-lg border border-gray-200 dark:border-gray-700">
             {/* Profile Header */}
             <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
               <div className="relative">
@@ -162,10 +184,10 @@ const UserProfile = () => {
               </div>
               
               <div className="text-center md:text-left">
-                <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                   {user?.name || 'User'}
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 mb-2">{user?.email}</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-2">{user?.email}</p>
                 <div className="flex items-center justify-center md:justify-start gap-2">
                   <FiShield className={`${user?.role === 'admin' ? 'text-green-500' : 'text-blue-500'}`} size={16} />
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
@@ -197,7 +219,7 @@ const UserProfile = () => {
               {/* Basic Information */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Basic Information</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h3>
                   {!editing && (
                     <button
                       type="button"
@@ -212,7 +234,7 @@ const UserProfile = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Name
                     </label>
                     <input
@@ -221,12 +243,12 @@ const UserProfile = () => {
                       value={formData.name}
                       onChange={handleInputChange}
                       disabled={!editing}
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email
                     </label>
                     <input
@@ -235,7 +257,7 @@ const UserProfile = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       disabled={!editing}
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -244,12 +266,12 @@ const UserProfile = () => {
               {/* Password Change Section */}
               {editing && (
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">Change Password</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Leave blank to keep current password</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change Password</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Leave blank to keep current password</p>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Current Password
                       </label>
                       <input
@@ -257,13 +279,13 @@ const UserProfile = () => {
                         name="currentPassword"
                         value={formData.currentPassword}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100"
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           New Password
                         </label>
                         <input
@@ -271,12 +293,12 @@ const UserProfile = () => {
                           name="newPassword"
                           value={formData.newPassword}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100"
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Confirm New Password
                         </label>
                         <input
@@ -284,7 +306,7 @@ const UserProfile = () => {
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100"
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
                       </div>
                     </div>
@@ -318,7 +340,7 @@ const UserProfile = () => {
                       setError('');
                       setSuccess('');
                     }}
-                    className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors font-medium"
+                    className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors font-medium"
                   >
                     Cancel
                   </button>

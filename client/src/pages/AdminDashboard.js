@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import FloatingGraphsBackground from '../components/FloatingGraphsBackground';
 import ThemeToggle from '../components/ThemeToggle';
 import { 
   FiUsers, 
@@ -13,7 +14,6 @@ import {
   FiPieChart,
   FiUser,
   FiArrowRight,
-// FiChevronRight,
   FiRefreshCw,
   FiAlertCircle,
   FiLogOut
@@ -22,8 +22,7 @@ import {
   getDashboardStats, 
   getAllUsers, 
   getAllFiles, 
-  getAllAnalyses,
-  getUserStats
+  getAllAnalyses
 } from '../services/api';
 import AdminCard from '../components/AdminCard';
 import QuickStatsCard from '../components/QuickStatsCard';
@@ -41,7 +40,6 @@ const AdminDashboard = () => {
     users: [],
     files: [],
     analyses: [],
-    userStats: []
   });
   const [refreshing, setRefreshing] = useState(false);
 
@@ -85,12 +83,11 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setRefreshing(true);
-      const [statsRes, usersRes, filesRes, analysesRes, userStatsRes] = await Promise.all([
+      const [statsRes, usersRes, filesRes, analysesRes] = await Promise.all([
         getDashboardStats(),
         getAllUsers(),
         getAllFiles(),
         getAllAnalyses(),
-        getUserStats()
       ]);
 
       setDashboardData({
@@ -98,15 +95,11 @@ const AdminDashboard = () => {
         users: usersRes.data,
         files: filesRes.data,
         analyses: analysesRes.data,
-        userStats: userStatsRes.data
       });
       setError('');
     } catch (err) {
       console.error('Dashboard fetch error:', err);
-      setError(err.response?.status === 403 
-        ? 'Access denied. Admin privileges required.'
-        : 'Failed to load dashboard data.'
-      );
+      setError(err.response?.data?.msg || err.message || 'Failed to load dashboard data.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,17 +122,19 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-transparent relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 relative overflow-hidden">
+        <FloatingGraphsBackground />
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen">
           <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">Loading admin dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">Loading admin dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 relative overflow-hidden">
+      <FloatingGraphsBackground />
       
       <div className="relative z-10 p-8">
         {/* Header */}
@@ -150,8 +145,8 @@ const AdminDashboard = () => {
                 <FiShield className="text-white" size={32} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Admin Dashboard</h1>
-                <p className="text-slate-600 dark:text-slate-400">Manage users, data, and platform settings</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+                <p className="text-gray-600 dark:text-gray-400">Manage users, data, and platform settings</p>
               </div>
             </div>
             
@@ -159,7 +154,7 @@ const AdminDashboard = () => {
               <button
                 onClick={fetchDashboardData}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-all duration-200 shadow-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 shadow-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
               >
                 <FiRefreshCw className={refreshing ? 'animate-spin' : ''} size={16} />
                 Refresh
@@ -185,6 +180,44 @@ const AdminDashboard = () => {
           )}
         </div>
 
+        {/* Quick Actions */}
+        <div className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl p-6 border border-blue-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button 
+              onClick={() => handleNavigation('/admin/users')}
+              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-700/50 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-600/50 transition-colors border border-gray-200 dark:border-gray-600"
+            >
+              <FiUsers className="text-blue-600 dark:text-blue-400" size={24} />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">View Users</span>
+            </button>
+            
+            <button 
+              onClick={() => handleNavigation('/admin/data')}
+              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-700/50 rounded-xl hover:bg-green-50 dark:hover:bg-gray-600/50 transition-colors border border-gray-200 dark:border-gray-600"
+            >
+              <FiDatabase className="text-green-600 dark:text-green-400" size={24} />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">View Data</span>
+            </button>
+            
+            <button 
+              onClick={fetchDashboardData}
+              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-700/50 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-600/50 transition-colors border border-gray-200 dark:border-gray-600"
+            >
+              <FiRefreshCw className="text-purple-600 dark:text-purple-400" size={24} />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Refresh Data</span>
+            </button>
+            
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-700/50 rounded-xl hover:bg-orange-50 dark:hover:bg-gray-600/50 transition-colors border border-gray-200 dark:border-gray-600"
+            >
+              <FiArrowRight className="text-orange-600 dark:text-orange-400" size={24} />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">User View</span>
+            </button>
+          </div>
+        </div>
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <QuickStatsCard
@@ -204,7 +237,7 @@ const AdminDashboard = () => {
           <QuickStatsCard
             title="Total Analyses"
             value={dashboardData.stats.overview?.totalAnalyses || dashboardData.analyses.length || 0}
-            icon={FiBarChart2}
+           icon={FiBarChart2}
             color="purple"
             subtitle="Created charts"
           />
@@ -217,49 +250,11 @@ const AdminDashboard = () => {
           />
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8 bg-white/50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button 
-              onClick={() => handleNavigation('/admin/users')}
-              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-700/50 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-600/50 transition-colors border border-slate-200 dark:border-slate-600"
-            >
-              <FiUsers className="text-blue-600 dark:text-blue-400" size={24} />
-              <span className="text-sm font-medium text-slate-800 dark:text-white">View Users</span>
-            </button>
-            
-            <button 
-              onClick={() => handleNavigation('/admin/data')}
-              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-700/50 rounded-xl hover:bg-green-50 dark:hover:bg-slate-600/50 transition-colors border border-slate-200 dark:border-slate-600"
-            >
-              <FiDatabase className="text-green-600 dark:text-green-400" size={24} />
-              <span className="text-sm font-medium text-slate-800 dark:text-white">View Data</span>
-            </button>
-            
-            <button 
-              onClick={fetchDashboardData}
-              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-700/50 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-600/50 transition-colors border border-slate-200 dark:border-slate-600"
-            >
-              <FiRefreshCw className="text-purple-600 dark:text-purple-400" size={24} />
-              <span className="text-sm font-medium text-slate-800 dark:text-white">Refresh Data</span>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-700/50 rounded-xl hover:bg-orange-50 dark:hover:bg-slate-600/50 transition-colors border border-slate-200 dark:border-slate-600"
-            >
-              <FiArrowRight className="text-orange-600 dark:text-orange-400" size={24} />
-              <span className="text-sm font-medium text-slate-800 dark:text-white">User View</span>
-            </button>
-          </div>
-        </div>
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Admin Functions */}
           <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Administration</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Administration</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* User Management */}
               <AdminCard
@@ -283,8 +278,8 @@ const AdminDashboard = () => {
                 color="green"
                 onClick={() => handleNavigation('/admin/data')}
                 stats={[
-                  { label: 'Files', value: dashboardData.files.length || 0 },
-                  { label: 'Analyses', value: dashboardData.analyses.length || 0 }
+                  { label: 'Total Files', value: dashboardData.files.length || 0 },
+                  { label: 'Total Analyses', value: dashboardData.analyses.length || 0 }
                 ]}
               />
 
@@ -294,14 +289,10 @@ const AdminDashboard = () => {
                 description="View detailed platform analytics and insights"
                 icon={FiTrendingUp}
                 color="purple"
-                onClick={() => handleNavigation('/admin/analytics')}
+                onClick={() => handleNavigation('/admin/data')}
                 stats={[
-                  { label: 'Chart Types', value: dashboardData.stats.chartTypeStats?.length || 0 },
-                  { label: 'This Week', value: dashboardData.analyses.filter(a => {
-                    const analysisDate = new Date(a.createdAt);
-                    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                    return analysisDate > weekAgo;
-                  }).length || 0 }
+                  { label: 'Total Files', value: dashboardData.files.length || 0 },
+                  { label: 'Total Analyses', value: dashboardData.analyses.length || 0 }
                 ]}
               />
 
@@ -320,10 +311,10 @@ const AdminDashboard = () => {
 
           {/* Activity Feed */}
           <div className="lg:col-span-1">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Recent Activity</h2>
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Live Feed</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Live Feed</h3>
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-xs font-medium">Live</span>
@@ -336,7 +327,7 @@ const AdminDashboard = () => {
                 ))}
               </div>
               
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button 
                   onClick={() => handleNavigation('/admin/activity')}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
@@ -353,15 +344,15 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Chart Type Distribution */}
           {dashboardData.stats.chartTypeStats && dashboardData.stats.chartTypeStats.length > 0 && (
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-white">Chart Type Distribution</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Chart Type Distribution</h3>
                 <FiPieChart className="text-purple-600 dark:text-purple-400" size={24} />
               </div>
               
               <div className="space-y-3">
                 {dashboardData.stats.chartTypeStats.slice(0, 5).map((stat, index) => (
-                  <div key={stat._id} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                  <div key={stat._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${
                         index === 0 ? 'from-blue-500 to-blue-600' :
@@ -370,14 +361,14 @@ const AdminDashboard = () => {
                         index === 3 ? 'from-orange-500 to-orange-600' :
                         'from-red-500 to-red-600'
                       }`}></div>
-                      <span className="font-medium text-slate-800 dark:text-white capitalize">{stat._id}</span>
+                      <span className="font-medium text-gray-900 dark:text-white capitalize">{stat._id}</span>
                     </div>
-                    <span className="text-lg font-bold text-slate-800 dark:text-white">{stat.count}</span>
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">{stat.count}</span>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button 
                   onClick={() => handleNavigation('/admin/data')}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
@@ -391,33 +382,33 @@ const AdminDashboard = () => {
 
           {/* Top Users */}
           {dashboardData.stats.topUsers && dashboardData.stats.topUsers.length > 0 && (
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-white">Most Active Users</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Most Active Users</h3>
                 <FiTrendingUp className="text-green-600 dark:text-green-400" size={24} />
               </div>
               
               <div className="space-y-3">
                 {dashboardData.stats.topUsers.slice(0, 5).map((user, index) => (
-                  <div key={user._id} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                  <div key={user._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-bold">#{index + 1}</span>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-800 dark:text-white">{user.name}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{user.email}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{user.email}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-green-600 dark:text-green-400">{user.analysisCount}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">analyses</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">analyses</p>
                     </div>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button 
                   onClick={() => handleNavigation('/admin/users')}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"

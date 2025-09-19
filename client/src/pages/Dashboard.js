@@ -1,12 +1,12 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiEdit, FiTrash2, FiShield, FiUser } from 'react-icons/fi';
 import { Bar, Line, Pie, Doughnut, PolarArea, Radar, Scatter, Bubble } from 'react-chartjs-2';
 import Chart3D from '../components/Chart3D';
 import ThemeToggle from '../components/ThemeToggle';
-import { tokenUtils } from '../utils/auth';
-import { clearAuthAndRedirect } from '../utils/clearAuth';
-import { debugAuth } from '../utils/debugAuth';
+import FloatingGraphsBackground from '../components/FloatingGraphsBackground';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,6 +21,21 @@ import {
   Legend,
 } from 'chart.js';
 import { getAnalyses, deleteAnalysis } from '../services/api'; // Updated API function
+
+// Helper function to check if user is admin
+const isUserAdmin = () => {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  
+  try {
+    // Decode JWT token (simple base64 decode for payload)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.user?.role === 'admin';
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return false;
+  }
+};
 
 // Register Chart.js components
 ChartJS.register(
@@ -49,6 +64,7 @@ const ChartPreview = ({ analysis }) => {
 
     const isPieType = ['pie', 'doughnut', 'polarArea', 'pie3d', 'doughnut3d'].includes(analysis.settings.chartType);
     const isScatterBubble = ['scatter', 'bubble', 'scatter3d'].includes(analysis.settings.chartType);
+    const is3DChart = ['bar3d', 'scatter3d', 'surface3d', 'pie3d', 'doughnut3d'].includes(analysis.settings.chartType);
 
     if (isScatterBubble) {
       return {
@@ -166,7 +182,7 @@ const ChartPreview = ({ analysis }) => {
   };
 
   return (
-    <div className="w-full h-32 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg p-3 backdrop-blur-sm border border-slate-200 dark:border-gray-600/30">
+    <div className="w-full h-32 bg-gradient-to-br from-gray-700/30 to-gray-800/30 rounded-lg p-3 backdrop-blur-sm border border-gray-600/30">
       {renderChart()}
     </div>
   );
@@ -174,24 +190,24 @@ const ChartPreview = ({ analysis }) => {
 
 // Reusable card component for the dashboard
 const AnalysisCard = ({ analysis, onEdit, onDelete }) => (
-  <div className="group relative bg-white dark:bg-gray-800/50 rounded-xl p-6 shadow-lg hover:shadow-2xl hover:shadow-blue-500/25 hover:scale-[1.02] transition-all duration-300 border border-slate-200 dark:border-gray-700/50 hover:border-blue-500/50">
+  <div className="group relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/25 hover:scale-[1.02] transition-all duration-300 border border-gray-200 dark:border-gray-700/50 hover:border-blue-500/50">
     {/* Animated background gradient */}
     <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
     
     {/* Chart preview with enhanced styling */}
-    <div className="relative z-10 mb-4 rounded-lg overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-700/50 dark:to-gray-800/50 border border-slate-300 dark:border-gray-600/30">
+    <div className="relative z-10 mb-4 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700/50 dark:to-gray-800/50 border border-gray-300 dark:border-gray-600/30">
       <ChartPreview analysis={analysis} />
     </div>
     
     {/* Content */}
     <div className="relative z-10">
-      <h3 className="font-bold text-slate-800 dark:text-white text-lg truncate mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
+      <h3 className="font-bold text-gray-900 dark:text-white text-lg truncate mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
         {analysis.name}
       </h3>
       
       <div className="flex items-center gap-2 mb-3">
         <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {new Date(analysis.createdAt).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -208,14 +224,14 @@ const AnalysisCard = ({ analysis, onEdit, onDelete }) => (
         <div className="flex gap-3">
           <button
             onClick={() => onEdit(analysis)}
-            className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200 hover:scale-110"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-blue-500/20 rounded-lg transition-all duration-200 hover:scale-110"
             title="Edit Analysis"
           >
             <FiEdit size={16} />
           </button>
           <button
             onClick={() => onDelete(analysis._id)}
-            className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200 hover:scale-110"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200 hover:scale-110"
             title="Delete Analysis"
           >
             <FiTrash2 size={16} />
@@ -236,38 +252,23 @@ function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check authentication first
-    if (!tokenUtils.isAuthenticated()) {
-      console.log('User not authenticated, redirecting to login');
-      navigate('/login');
-      return;
-    }
-    
-    // Check if user is admin using the new auth utility
-    setIsAdmin(tokenUtils.isAdmin());
-  }, [navigate]);
+    // Check if user is admin
+    setIsAdmin(isUserAdmin());
+  }, []);
 
   useEffect(() => {
-    // Debug authentication state
-    console.log('Dashboard loading - checking auth state');
-    debugAuth();
-    
     const fetchAnalyses = async () => {
       try {
         const res = await getAnalyses();
         setAnalyses(res.data);
         setFilteredAnalyses(res.data);
-        setError(''); // Clear any previous errors
         setIsLoading(false);
       } catch (err) {
-        console.error('Error fetching analyses:', err);
         setError(err.response?.data?.message || "Failed to fetch analyses.");
         setIsLoading(false);
-        
-        // If it's an auth error, redirect to login
         if (err.response?.status === 401) {
-          localStorage.removeItem('token');
-          navigate('/login');
+          localStorage.removeItem("token");
+          navigate("/login");
         }
       }
     };
@@ -317,7 +318,8 @@ function Dashboard() {
   };
 
   const handleLogout = () => {
-    clearAuthAndRedirect();
+    localStorage.removeItem("token");
+    navigate("/login");
   };
   
   const handleCreateNew = () => {
@@ -350,16 +352,37 @@ function Dashboard() {
   };
 
   return (
-    <div className="relative min-h-screen bg-transparent overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900/50 dark:via-gray-800/30 dark:to-gray-900/50 overflow-hidden">
+      {/* Floating Graphs Background */}
+      <FloatingGraphsBackground />
       
-      <div className="relative z-10 p-8 text-slate-800 dark:text-white">
+      {/* Enhanced animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Large gradient orbs */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 dark:from-blue-500/5 dark:to-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-500/20 dark:from-purple-500/5 dark:to-pink-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        
+        {/* Geometric patterns */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent dark:from-blue-800/20 dark:to-transparent rounded-lg rotate-12 animate-pulse delay-700"></div>
+        <div className="absolute bottom-32 right-32 w-24 h-24 bg-gradient-to-br from-purple-200/30 to-transparent dark:from-purple-800/20 dark:to-transparent rounded-full animate-pulse delay-300"></div>
+        <div className="absolute top-1/3 right-20 w-16 h-16 bg-gradient-to-br from-green-200/30 to-transparent dark:from-green-800/20 dark:to-transparent rounded-lg rotate-45 animate-pulse delay-1200"></div>
+        
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-30 dark:opacity-10" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.3) 1px, transparent 0)`,
+          backgroundSize: '50px 50px'
+        }}></div>
+      </div>
+      
+      <div className="relative z-10 p-8 text-gray-900 dark:text-white">
         {/* Enhanced Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-6">
           <div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600 dark:from-white dark:via-blue-200 dark:to-blue-400 bg-clip-text text-transparent mb-2">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-800 via-blue-600 to-purple-600 dark:from-white dark:via-blue-200 dark:to-blue-400 bg-clip-text text-transparent mb-2">
               Dashboard
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
               Manage your data visualizations and analytics
             </p>
           </div>
@@ -369,7 +392,7 @@ function Dashboard() {
             
             <button 
               onClick={handleCreateNew}
-              className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
+              className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-blue-500/25 hover:scale-105"
             >
               <FiPlus className="group-hover:rotate-90 transition-transform duration-300" /> 
               Create New Analysis
@@ -377,7 +400,7 @@ function Dashboard() {
             
             <button 
               onClick={handleProfile}
-              className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-purple-500/25 hover:scale-105"
+              className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-purple-500/25 hover:scale-105"
             >
               <FiUser /> 
               Profile
@@ -386,7 +409,7 @@ function Dashboard() {
             {isAdmin && (
               <button 
                 onClick={handleAdminDashboard}
-                className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-green-500/25 hover:scale-105"
+                className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-green-500/25 hover:scale-105"
               >
                 <FiShield /> 
                 Admin Panel
@@ -395,7 +418,7 @@ function Dashboard() {
             
             <button 
               onClick={handleLogout} 
-              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-red-500/25 hover:scale-105"
+              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-red-500/25 hover:scale-105"
             >
               Logout
             </button>
@@ -408,8 +431,8 @@ function Dashboard() {
             {/* Total Analyses Card */}
             <button
               onClick={() => handleFilterClick('all')}
-              className={`bg-white/50 dark:bg-blue-500/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 text-left ${
-                activeFilter === 'all' ? 'border-blue-400 ring-2 ring-blue-400/50' : 'border-slate-200 dark:border-blue-500/30'
+              className={`bg-gradient-to-br from-blue-500/20 to-blue-600/20 dark:from-blue-500/20 dark:to-blue-600/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 text-left ${
+                activeFilter === 'all' ? 'border-blue-400 ring-2 ring-blue-400/50' : 'border-blue-500/30 dark:border-blue-500/30'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -417,7 +440,7 @@ function Dashboard() {
                   <FiPlus className="text-blue-600 dark:text-blue-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white">{analyses.length}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{analyses.length}</p>
                   <p className="text-blue-600 dark:text-blue-300 text-sm">Total Analyses</p>
                 </div>
               </div>
@@ -427,8 +450,8 @@ function Dashboard() {
             {/* This Week Card */}
             <button
               onClick={() => handleFilterClick('recent')}
-              className={`bg-white/50 dark:bg-green-500/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25 text-left ${
-                activeFilter === 'recent' ? 'border-green-400 ring-2 ring-green-400/50' : 'border-slate-200 dark:border-green-500/30'
+              className={`bg-gradient-to-br from-green-500/20 to-green-600/20 dark:from-green-500/20 dark:to-green-600/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25 text-left ${
+                activeFilter === 'recent' ? 'border-green-400 ring-2 ring-green-400/50' : 'border-green-500/30 dark:border-green-500/30'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -436,7 +459,7 @@ function Dashboard() {
                   <FiEdit className="text-green-600 dark:text-green-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {analyses.filter(a => new Date(a.createdAt) > new Date(Date.now() - 7*24*60*60*1000)).length}
                   </p>
                   <p className="text-green-600 dark:text-green-300 text-sm">This Week</p>
@@ -448,8 +471,8 @@ function Dashboard() {
             {/* Chart Types Card */}
             <button
               onClick={() => handleFilterClick('chartTypes')}
-              className={`bg-white/50 dark:bg-purple-500/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 text-left ${
-                activeFilter === 'chartTypes' ? 'border-purple-400 ring-2 ring-purple-400/50' : 'border-slate-200 dark:border-purple-500/30'
+              className={`bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 text-left ${
+                activeFilter === 'chartTypes' ? 'border-purple-400 ring-2 ring-purple-400/50' : 'border-purple-500/30'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -457,7 +480,7 @@ function Dashboard() {
                   <FiTrash2 className="text-purple-400" size={20} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-slate-800 dark:text-white">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {new Set(analyses.map(a => a.settings.chartType)).size}
                   </p>
                   <p className="text-purple-600 dark:text-purple-300 text-sm">Chart Types Used</p>
@@ -472,25 +495,14 @@ function Dashboard() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">Loading your analyses...</p>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Loading your analyses...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && (
           <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 backdrop-blur-sm border border-red-500/30 rounded-xl p-6 text-center">
-            <p className="text-red-300 text-lg mb-4">{error}</p>
-            <button 
-              onClick={() => {
-                localStorage.setItem('demoMode', 'true');
-                localStorage.setItem('skipAuthRedirect', 'true');
-                localStorage.setItem('token', 'demo-token-' + Date.now());
-                window.location.reload();
-              }}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              🎭 Enable Demo Mode
-            </button>
+            <p className="text-red-300 text-lg">{error}</p>
           </div>
         )}
 
@@ -498,12 +510,12 @@ function Dashboard() {
         {!isLoading && !error && (
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <h2 className="text-2xl font-semibold text-slate-800 dark:text-white">{getFilterTitle()}</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{getFilterTitle()}</h2>
               <div className="h-px bg-gradient-to-r from-blue-500 to-purple-500 flex-1"></div>
               {activeFilter !== 'all' && (
                 <button
                   onClick={() => handleFilterClick('all')}
-                  className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-3 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-700/50"
+                  className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors px-3 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700/50"
                 >
                   Clear Filter
                 </button>
@@ -526,14 +538,14 @@ function Dashboard() {
                     {analyses.length === 0 ? (
                       // No analyses at all
                       <>
-                        <div className="w-24 h-24 bg-slate-200 dark:bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <FiPlus className="text-slate-500" size={32} />
+                        <div className="w-24 h-24 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <FiPlus className="text-gray-500" size={32} />
                         </div>
-                        <h3 className="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">No analyses yet</h3>
-                        <p className="text-slate-500 dark:text-slate-500 mb-6">Create your first data visualization to get started</p>
+                        <h3 className="text-xl font-semibold text-gray-400 mb-2">No analyses yet</h3>
+                        <p className="text-gray-500 mb-6">Create your first data visualization to get started</p>
                         <button 
                           onClick={handleCreateNew}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-blue-500/25"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-blue-500/25"
                         >
                           <FiPlus /> Create Your First Analysis
                         </button>
@@ -541,14 +553,14 @@ function Dashboard() {
                     ) : (
                       // No analyses match current filter
                       <>
-                        <div className="w-24 h-24 bg-slate-200 dark:bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <FiEdit className="text-slate-500" size={32} />
+                        <div className="w-24 h-24 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <FiEdit className="text-gray-500" size={32} />
                         </div>
-                        <h3 className="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">No matches found</h3>
-                        <p className="text-slate-500 dark:text-slate-500 mb-6">No analyses match the current filter criteria</p>
+                        <h3 className="text-xl font-semibold text-gray-400 mb-2">No matches found</h3>
+                        <p className="text-gray-500 mb-6">No analyses match the current filter criteria</p>
                         <button 
                           onClick={() => handleFilterClick('all')}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl font-semibold transition-all duration-300"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 rounded-xl font-semibold transition-all duration-300"
                         >
                           View All Analyses
                         </button>

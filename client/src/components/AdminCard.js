@@ -64,7 +64,7 @@ const AdminCard = ({
   return (
     <div 
       onClick={disabled ? undefined : onClick}
-      className={`group relative bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl border border-slate-200 dark:border-slate-700 transition-all duration-300 cursor-pointer overflow-hidden ${
+      className={`group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden ${
         disabled ? 'opacity-50 cursor-not-allowed' : colors.border
       }`}
     >
@@ -83,15 +83,15 @@ const AdminCard = ({
           )}
         </div>
         
-        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">{title}</h3>
-        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">{description}</p>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{description}</p>
         
         {stats && (
           <div className="grid grid-cols-2 gap-3 mb-4">
             {stats.map((stat, index) => (
-              <div key={index} className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-3">
-                <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{stat.value}</p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{stat.label}</p>
+              <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stat.value}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{stat.label}</p>
               </div>
             ))}
           </div>

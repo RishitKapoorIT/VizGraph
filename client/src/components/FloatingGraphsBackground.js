@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiBarChart2, FiPieChart, FiTrendingUp, FiGitMerge, FiShare2, FiActivity } from 'react-icons/fi';
-import { useSelector } from 'react-redux';
+import { useTheme } from '../contexts/ThemeContext';
 import './FloatingGraphsBackground.css';
 
 // Base set of icons
@@ -23,7 +23,7 @@ const FloatingGraphsBackground = () => {
   const draggedIconRef = useRef(null);
   const mouseOffsetRef = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
-  const isDark = useSelector(state => state.theme.isDark);
+  const { isDark } = useTheme();
 
   // Initialize icons on mount
   useEffect(() => {
@@ -135,9 +135,14 @@ const FloatingGraphsBackground = () => {
   }, [handleMouseMove]); // Re-bind if the handler changes
 
   return (
-    <div
-      className={`background-container ${isDark ? 'dark' : 'light'}`}
+    <div 
+      className={`background-container ${isDark ? 'dark' : 'light'}`} 
       ref={containerRef}
+      style={{
+        background: isDark 
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)'
+          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)'
+      }}
     >
       {iconsState.map(item => {
         const IconComponent = item.icon;
@@ -151,10 +156,10 @@ const FloatingGraphsBackground = () => {
               fontSize: item.size,
               cursor: 'grab',
               color: isDark 
-                ? 'rgba(255, 255, 255, 0.1)' 
+                ? 'rgba(148, 163, 184, 0.08)' 
                 : 'rgba(71, 85, 105, 0.08)',
               filter: isDark 
-                ? 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.25))'
+                ? 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.1))'
                 : 'drop-shadow(0 0 10px rgba(15, 23, 42, 0.05))'
             }}
             onMouseDown={e => handleMouseDown(e, item.id)}

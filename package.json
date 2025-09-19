@@ -1,48 +1,12 @@
 {
-  "name": "vizgraph",
-  "version": "1.0.0",
-  "description": "VizGraph - Advanced Data Visualization Platform",
-  "main": "server/index.js",
-  "type": "module",
-  "scripts": {
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "cd server && npm run dev",
-    "server:start": "cd server && npm start",
-    "client:dev": "cd client && npm start",
-    "client:build": "cd client && npm run build",
-    "client:test": "cd client && npm test",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "build": "cd client && npm run build",
-    "start": "cd server && npm start",
-    "heroku-postbuild": "npm run install:all && npm run build"
-  },
-  "keywords": [
-    "data-visualization",
-    "react",
-    "node",
-    "mongodb",
-    "charts",
-    "analytics"
-  ],
-  "author": "RishitKapoorIT",
-  "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/RishitKapoorIT/VizGraph.git"
-  },
   "dependencies": {
-    "@react-three/drei": "^9.122.0",
-    "@react-three/fiber": "^8.18.0",
-    "@reduxjs/toolkit": "^2.9.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-redux": "^9.2.0"
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12",
+    "@tailwindcss/postcss": "^4.1.12",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12"
   }
 }
