@@ -133,7 +133,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
 ### For Users
 1. **Sign Up/Login**: Create an account or use Google OAuth
 2. **Upload Data**: Drag and drop CSV files or click to upload
-3. **Analyze**: Select chart type and axes for visualization
+3. **Analyse**: Select chart type and axes for visualisation
 4. **Export**: Download charts, data, or AI summaries
 5. **Manage**: View your uploaded files and analyses
 
@@ -186,21 +186,18 @@ npm test
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Chart.js for excellent charting library
-- Three.js for 3D visualization capabilities  
+- Chart.js for an excellent charting library
+- Three.js for 3D visualisation capabilities  
 - OpenAI for AI-powered insights
 - Tailwind CSS for beautiful styling
-- React ecosystem for robust frontend framework
+- React ecosystem for a robust frontend framework
 
 ## 📧 Support
 
-For support, email support@vizgraph.com or create an issue on GitHub.
+For support, email rishitkpr@gmail.com or create an issue on GitHub.
 
 ## 🗺️ Roadmap
 
