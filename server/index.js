@@ -88,7 +88,8 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => {
   console.error("❌ MongoDB connection error:", err.message);
   console.error("Full error:", err);
-  process.exit(1); // Exit if can't connect to database
+  // Do not exit the server; allow API to respond with safe defaults
+  // Some endpoints are hardened to return default values when DB is unavailable.
 });
 
 // START SERVER

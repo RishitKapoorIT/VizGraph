@@ -190,12 +190,13 @@ const ChartPreview = ({ analysis }) => {
 
 // Reusable card component for the dashboard
 const AnalysisCard = ({ analysis, onEdit, onDelete }) => (
-  <div className="group relative bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-xl hover:shadow-2xl hover:shadow-blue-500/25 hover:scale-[1.02] transition-all duration-300 border border-gray-200 dark:border-gray-700/50 hover:border-blue-500/50">
+  <div className="group relative bg-white/40 dark:bg-gray-800/40 backdrop-blur-2xl rounded-3xl p-6 shadow-xl hover:shadow-[0_0_40px_rgba(59,130,246,0.2)] dark:hover:shadow-[0_0_40px_rgba(59,130,246,0.3)] hover:-translate-y-2 transition-all duration-500 border border-white/50 dark:border-gray-600/50 overflow-hidden cursor-pointer">
     {/* Animated background gradient */}
     <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
     
     {/* Chart preview with enhanced styling */}
-    <div className="relative z-10 mb-4 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700/50 dark:to-gray-800/50 border border-gray-300 dark:border-gray-600/30">
+    <div className="relative z-10 mb-5 rounded-2xl overflow-hidden bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border border-white/40 dark:border-gray-700/50 p-1 group-hover:border-blue-500/30 transition-colors duration-300">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
       <ChartPreview analysis={analysis} />
     </div>
     
@@ -359,9 +360,9 @@ function Dashboard() {
       {/* Enhanced animated background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Large gradient orbs */}
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 dark:from-blue-500/5 dark:to-indigo-500/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-500/20 dark:from-purple-500/5 dark:to-pink-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 dark:from-blue-500/10 dark:to-indigo-500/10 rounded-full blur-3xl animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-500/20 dark:from-purple-500/10 dark:to-pink-500/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 rounded-full blur-3xl animate-blob" style={{ animationDelay: '4s' }}></div>
         
         {/* Geometric patterns */}
         <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent dark:from-blue-800/20 dark:to-transparent rounded-lg rotate-12 animate-pulse delay-700"></div>
@@ -431,8 +432,8 @@ function Dashboard() {
             {/* Total Analyses Card */}
             <button
               onClick={() => handleFilterClick('all')}
-              className={`bg-gradient-to-br from-blue-500/20 to-blue-600/20 dark:from-blue-500/20 dark:to-blue-600/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 text-left ${
-                activeFilter === 'all' ? 'border-blue-400 ring-2 ring-blue-400/50' : 'border-blue-500/30 dark:border-blue-500/30'
+              className={`bg-white/40 dark:bg-gray-800/40 backdrop-blur-2xl rounded-3xl p-6 border transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] text-left ${
+                activeFilter === 'all' ? 'border-blue-400 bg-blue-50/50 dark:bg-blue-900/20' : 'border-white/50 dark:border-gray-600/50'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -450,8 +451,8 @@ function Dashboard() {
             {/* This Week Card */}
             <button
               onClick={() => handleFilterClick('recent')}
-              className={`bg-gradient-to-br from-green-500/20 to-green-600/20 dark:from-green-500/20 dark:to-green-600/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25 text-left ${
-                activeFilter === 'recent' ? 'border-green-400 ring-2 ring-green-400/50' : 'border-green-500/30 dark:border-green-500/30'
+              className={`bg-white/40 dark:bg-gray-800/40 backdrop-blur-2xl rounded-3xl p-6 border transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)] text-left ${
+                activeFilter === 'recent' ? 'border-green-400 bg-green-50/50 dark:bg-green-900/20' : 'border-white/50 dark:border-gray-600/50'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -471,8 +472,8 @@ function Dashboard() {
             {/* Chart Types Card */}
             <button
               onClick={() => handleFilterClick('chartTypes')}
-              className={`bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-6 border transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 text-left ${
-                activeFilter === 'chartTypes' ? 'border-purple-400 ring-2 ring-purple-400/50' : 'border-purple-500/30'
+              className={`bg-white/40 dark:bg-gray-800/40 backdrop-blur-2xl rounded-3xl p-6 border transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] text-left ${
+                activeFilter === 'chartTypes' ? 'border-purple-400 bg-purple-50/50 dark:bg-purple-900/20' : 'border-white/50 dark:border-gray-600/50'
               }`}
             >
               <div className="flex items-center gap-3">

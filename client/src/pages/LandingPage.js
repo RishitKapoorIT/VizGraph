@@ -68,9 +68,9 @@ const LandingPage = () => {
         {/* Hero Section */}
         <div className="max-w-7xl mx-auto px-6 pt-20 pb-12">
           <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
               Transform Your Data into
-              <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent mt-2 pb-2">
                 Beautiful Visualizations
               </span>
             </h1>
@@ -83,10 +83,13 @@ const LandingPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
                 onClick={() => navigate('/register')}
-                className="group flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                className="group relative overflow-hidden flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(147,51,234,0.6)] hover:scale-105"
               >
-                Start Creating
-                <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shimmer"></div>
+                <span className="relative z-10 flex items-center gap-2">
+                  Start Creating
+                  <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                </span>
               </button>
               
               <button

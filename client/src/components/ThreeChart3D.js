@@ -3,14 +3,98 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useTheme } from '../contexts/ThemeContext';
 
-const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart' }) => {
+const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart', axisLabels = { x: 'X', y: 'Y', z: 'Z' }, onExportReady }) => {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
+  const cameraRef = useRef(null);
   const controlsRef = useRef(null);
   const animationIdRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const { isDark } = useTheme();
+  const { x: axisX, y: axisY, z: axisZ } = axisLabels || {};
+
+  // Utility to create canvas-based text sprite
+  const makeTextSprite = React.useCallback((message, color = '#94a3b8') => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    const fontSize = 36;
+    context.font = `${fontSize}px sans-serif`;
+    const metrics = context.measureText(message);
+    const padding = 20;
+    canvas.width = Math.max(1, Math.ceil(metrics.width + padding * 2));
+    canvas.height = Math.max(1, Math.ceil(fontSize + padding * 2));
+    // set again after resize
+    context.font = `${fontSize}px sans-serif`;
+    context.fillStyle = color;
+    context.textBaseline = 'top';
+    context.fillText(message, padding, padding);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    const scaleFactor = 0.02;
+    sprite.scale.set(canvas.width * scaleFactor, canvas.height * scaleFactor, 1);
+    return sprite;
+  }, []);
+
+  // Create 3D Bar Chart (memoized)
+  const createBarChart = React.useCallback((scene, data, scales, topLabelColor = '#1f2937') => {
+    const colors = [
+      0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xffeaa7,
+      0xdda0dd, 0x98d8c8, 0xf7dc6f, 0xbb8fce, 0x85c1e9
+    ];
+
+    data.forEach((item, index) => {
+      const value = Math.abs(Number(item.value || item.y || 0));
+      const height = Math.max(scales.yScale(value), 0.02);
+      const x = scales.xScale(index);
+      const z = scales.zScale(Number(item.z || 0));
+      
+      const geometry = new THREE.BoxGeometry(0.9, height, 0.9);
+      const material = new THREE.MeshLambertMaterial({ 
+        color: colors[index % colors.length],
+        transparent: true,
+        opacity: 0.8
+      });
+      
+      const bar = new THREE.Mesh(geometry, material);
+      bar.position.set(x, height / 2, z);
+      bar.castShadow = true;
+      bar.receiveShadow = true;
+      scene.add(bar);
+
+      const lbl = makeTextSprite(String(value), topLabelColor);
+      lbl.position.set(x, height + 0.2, z);
+      scene.add(lbl);
+    });
+  }, [makeTextSprite]);
+
+  // Create 3D Scatter Chart (memoized)
+  const createScatterChart = React.useCallback((scene, data, scales) => {
+    const colors = [
+      0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xffeaa7,
+      0xdda0dd, 0x98d8c8, 0xf7dc6f, 0xbb8fce, 0x85c1e9
+    ];
+
+    data.forEach((item, index) => {
+      const x = scales.xScale(index);
+      const y = Math.max(scales.yScale(Number(item.y || item.value || 0)), 0.02);
+      const z = scales.zScale(Number(item.z || 0));
+      
+      const geometry = new THREE.SphereGeometry(0.25, 16, 16);
+      const material = new THREE.MeshLambertMaterial({ 
+        color: colors[index % colors.length],
+        transparent: true,
+        opacity: 0.85
+      });
+      
+      const sphere = new THREE.Mesh(geometry, material);
+      sphere.position.set(x, y, z);
+      sphere.castShadow = true;
+      scene.add(sphere);
+    });
+  }, []);
 
   useEffect(() => {
     if (!mountRef.current || !data) return;
@@ -33,9 +117,10 @@ const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart' }) => {
     );
     camera.position.set(10, 10, 10);
     camera.lookAt(0, 0, 0);
+    cameraRef.current = camera;
 
     // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -61,25 +146,101 @@ const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart' }) => {
     directionalLight.shadow.mapSize.height = 2048;
     scene.add(directionalLight);
 
-    // Grid helper
-    const gridHelper = new THREE.GridHelper(20, 10, 0x444444, 0x444444);
+    // Grid and axes
+    const gridSize = 20; // overall grid size
+    const divisions = 10; // grid divisions
+    const gridHelper = new THREE.GridHelper(gridSize, divisions, 0x555555, 0x444444);
+    gridHelper.position.y = 0;
     scene.add(gridHelper);
 
-    // Axes helper
-    const axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
+    // Build custom axes with ticks and text sprites
+    const axisColorX = 0xff5555;
+    const axisColorY = 0x55ff55;
+    const axisColorZ = 0x5555ff;
 
-    // Process data
+    const axisLength = gridSize / 2; // extends from center to edge
+    const tickCount = 5;
+    const tickSize = 0.1;
+
+    const createAxis = (dirVec, color) => {
+      const geometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        dirVec.clone().multiplyScalar(axisLength)
+      ]);
+      const material = new THREE.LineBasicMaterial({ color });
+      const line = new THREE.Line(geometry, material);
+      scene.add(line);
+
+      // ticks
+      for (let i = 1; i <= tickCount; i++) {
+        const t = (i / tickCount) * axisLength;
+        const base = dirVec.clone().normalize().multiplyScalar(t);
+        let a1, a2;
+        if (Math.abs(dirVec.x) > 0) {
+          a1 = new THREE.Vector3(base.x, base.y + tickSize, base.z);
+          a2 = new THREE.Vector3(base.x, base.y - tickSize, base.z);
+        } else if (Math.abs(dirVec.y) > 0) {
+          a1 = new THREE.Vector3(base.x + tickSize, base.y, base.z);
+          a2 = new THREE.Vector3(base.x - tickSize, base.y, base.z);
+        } else {
+          a1 = new THREE.Vector3(base.x + tickSize, base.y, base.z);
+          a2 = new THREE.Vector3(base.x - tickSize, base.y, base.z);
+        }
+        const tickGeo = new THREE.BufferGeometry().setFromPoints([a1, a2]);
+        const tickLine = new THREE.Line(tickGeo, new THREE.LineBasicMaterial({ color }));
+        scene.add(tickLine);
+      }
+    };
+
+    createAxis(new THREE.Vector3(1, 0, 0), axisColorX); // X
+    createAxis(new THREE.Vector3(0, 1, 0), axisColorY); // Y
+    createAxis(new THREE.Vector3(0, 0, 1), axisColorZ); // Z
+
+    // Axis label sprites
+    const labelColor = isDark ? '#e5e7eb' : '#334155';
+    const xLabel = makeTextSprite(axisX || 'X', labelColor);
+    xLabel.position.set(axisLength + 0.5, 0.1, 0);
+    scene.add(xLabel);
+    const yLabel = makeTextSprite(axisY || 'Y', labelColor);
+    yLabel.position.set(0, axisLength + 0.5, 0);
+    scene.add(yLabel);
+    const zLabel = makeTextSprite(axisZ || 'Z', labelColor);
+    zLabel.position.set(0, 0.1, axisLength + 0.5);
+    scene.add(zLabel);
+
+    // Process data and build scales
     const processedData = Array.isArray(data) ? data : [];
-    const maxValue = Math.max(...processedData.map(d => Math.abs(d.value || d.y || 0)), 1);
+    const maxY = Math.max(...processedData.map(d => Number(d.y) || Number(d.value) || 0), 1);
+    const minY = Math.min(...processedData.map(d => Number(d.y) || Number(d.value) || 0), 0);
+
+    const uniqueX = processedData.map((d, i) => (typeof d.x === 'number' ? d.x : i));
+    const maxXIndex = Math.max(uniqueX.length - 1, 1);
+  const maxZ = Math.max(...processedData.map(d => Number(d.z) || 0));
+  const minZ = Math.min(...processedData.map(d => Number(d.z) || 0));
+
+    const xScale = (i) => {
+      const pos = (i / Math.max(maxXIndex, 1)) * (gridSize * 0.8) - (gridSize * 0.4);
+      return pos;
+    };
+    const yScale = (v) => {
+      const range = maxY - minY || 1;
+      const norm = (v - minY) / range;
+      return norm * (gridSize * 0.4);
+    };
+    const zScale = (v) => {
+      if (!isFinite(maxZ) || !isFinite(minZ) || maxZ === minZ) return 0; // center when no Z variation
+      const range = maxZ - minZ;
+      const norm = (v - minZ) / range;
+      return norm * (gridSize * 0.8) - (gridSize * 0.4);
+    };
 
     // Create charts based on type
     switch (chartType) {
       case 'bar':
-        createBarChart(scene, processedData, maxValue);
+        createBarChart(scene, processedData, { xScale, yScale, zScale }, isDark ? '#e5e7eb' : '#1f2937');
         break;
       case 'scatter':
-        createScatterChart(scene, processedData, maxValue);
+        createScatterChart(scene, processedData, { xScale, yScale, zScale });
         break;
       case 'pie':
         createPieChart(scene, processedData);
@@ -88,7 +249,7 @@ const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart' }) => {
         createDoughnutChart(scene, processedData);
         break;
       default:
-        createBarChart(scene, processedData, maxValue);
+        createBarChart(scene, processedData, { xScale, yScale, zScale }, isDark ? '#e5e7eb' : '#1f2937');
     }
 
     // Mount renderer
@@ -116,9 +277,44 @@ const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart' }) => {
       }
     };
 
-    window.addEventListener('resize', handleResize);
+  window.addEventListener('resize', handleResize);
     animate();
-    setIsLoading(false);
+    // Axis tick labels (values)
+    const yTickColor = labelColor;
+    const yTicks = 5;
+    const yRange = maxY - minY || 1;
+    for (let i = 0; i <= yTicks; i++) {
+      const val = minY + (i / yTicks) * yRange;
+      const sprite = makeTextSprite(String(Math.round(val * 100) / 100), yTickColor);
+      sprite.position.set(-0.5, yScale(val), 0);
+      scene.add(sprite);
+    }
+
+    // X category labels (sampled)
+    const labels = processedData.map(d => d.label);
+    if (labels.length) {
+      const step = Math.max(1, Math.ceil(labels.length / 5));
+      for (let i = 0; i < labels.length; i += step) {
+        const txt = String(labels[i]).length > 10 ? String(labels[i]).slice(0, 10) + '…' : String(labels[i]);
+        const sprite = makeTextSprite(txt, labelColor);
+        sprite.position.set(xScale(i), 0.05, 0.3);
+        scene.add(sprite);
+      }
+    }
+
+    // Z tick labels if Z varies
+    if (isFinite(maxZ) && isFinite(minZ) && maxZ !== minZ) {
+      const zTicks = 5;
+      const zRange = maxZ - minZ;
+      for (let i = 0; i <= zTicks; i++) {
+        const val = minZ + (i / zTicks) * zRange;
+        const sprite = makeTextSprite(String(Math.round(val * 100) / 100), labelColor);
+        sprite.position.set(0.3, 0.05, zScale(val));
+        scene.add(sprite);
+      }
+    }
+
+  setIsLoading(false);
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -131,77 +327,41 @@ const ThreeChart3D = ({ data, chartType = 'bar', title = '3D Chart' }) => {
       controls.dispose();
       renderer.dispose();
     };
-  }, [data, chartType, isDark]);
+  }, [data, chartType, isDark, axisX, axisY, axisZ, createBarChart, createScatterChart, makeTextSprite]);
 
-  // Create 3D Bar Chart
-  const createBarChart = (scene, data, maxValue) => {
-    const colors = [
-      0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xffeaa7,
-      0xdda0dd, 0x98d8c8, 0xf7dc6f, 0xbb8fce, 0x85c1e9
-    ];
+  // Expose export function to parent when ready
+  useEffect(() => {
+    if (!onExportReady) return;
+    const exporter = (opts = {}) => {
+      const renderer = rendererRef.current;
+      const scene = sceneRef.current;
+      const camera = cameraRef.current;
+      if (!renderer || !scene || !camera) return null;
 
-    data.forEach((item, index) => {
-      const value = Math.abs(item.value || item.y || 0);
-      const height = (value / maxValue) * 5;
-      const x = (index - data.length / 2) * 2;
-      const z = item.z || 0;
-      
-      // Bar geometry
-      const geometry = new THREE.BoxGeometry(1.5, height, 1.5);
-      const material = new THREE.MeshLambertMaterial({ 
-        color: colors[index % colors.length],
-        transparent: true,
-        opacity: 0.8
-      });
-      
-      const bar = new THREE.Mesh(geometry, material);
-      bar.position.set(x, height / 2, z);
-      bar.castShadow = true;
-      bar.receiveShadow = true;
-      
-      scene.add(bar);
+      // optional higher-res capture
+      const origPixelRatio = renderer.getPixelRatio();
+      const origSize = renderer.getSize(new THREE.Vector2());
+      try {
+        if (opts.pixelRatio && typeof opts.pixelRatio === 'number') {
+          renderer.setPixelRatio(opts.pixelRatio);
+          renderer.setSize(origSize.x, origSize.y, false);
+        }
+        renderer.render(scene, camera);
+        const type = opts.type || 'image/png';
+        return renderer.domElement.toDataURL(type);
+      } finally {
+        if (opts.pixelRatio && typeof opts.pixelRatio === 'number') {
+          renderer.setPixelRatio(origPixelRatio);
+          renderer.setSize(origSize.x, origSize.y, false);
+          renderer.render(scene, camera);
+        }
+      }
+    };
+    onExportReady(exporter);
+    return () => onExportReady(null);
+  }, [onExportReady]);
 
-      // Add text label (simplified for now) - theme-aware color
-      const labelGeometry = new THREE.PlaneGeometry(2, 0.5);
-      const labelColor = isDark ? 0xffffff : 0x374151;
-      const labelMaterial = new THREE.MeshBasicMaterial({ 
-        color: labelColor,
-        transparent: true,
-        opacity: 0.9
-      });
-      const label = new THREE.Mesh(labelGeometry, labelMaterial);
-      label.position.set(x, height + 1, z);
-      label.lookAt(new THREE.Vector3(x, height + 1, 10));
-      scene.add(label);
-    });
-  };
-
-  // Create 3D Scatter Chart
-  const createScatterChart = (scene, data, maxValue) => {
-    const colors = [
-      0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xffeaa7,
-      0xdda0dd, 0x98d8c8, 0xf7dc6f, 0xbb8fce, 0x85c1e9
-    ];
-
-    data.forEach((item, index) => {
-      const x = ((item.x || index) - data.length / 2) * 0.5;
-      const y = ((item.y || item.value || 0) / maxValue) * 5;
-      const z = ((item.z || Math.random()) - 0.5) * 5;
-      
-      const geometry = new THREE.SphereGeometry(0.3, 16, 16);
-      const material = new THREE.MeshLambertMaterial({ 
-        color: colors[index % colors.length],
-        transparent: true,
-        opacity: 0.8
-      });
-      
-      const sphere = new THREE.Mesh(geometry, material);
-      sphere.position.set(x, y, z);
-      sphere.castShadow = true;
-      
-      scene.add(sphere);
-    });
-  };
+  
 
   // Create 3D Pie Chart
   const createPieChart = (scene, data) => {

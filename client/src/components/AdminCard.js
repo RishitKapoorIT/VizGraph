@@ -64,7 +64,7 @@ const AdminCard = ({
   return (
     <div 
       onClick={disabled ? undefined : onClick}
-      className={`group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer overflow-hidden ${
+      className={`group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg hover:shadow-xl border border-white/20 dark:border-gray-700/50 transition-all duration-300 cursor-pointer overflow-hidden ${
         disabled ? 'opacity-50 cursor-not-allowed' : colors.border
       }`}
     >

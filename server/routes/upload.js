@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import xlsx from 'xlsx';
 import verifyToken from '../middleware/verifyToken.js';
 import FileData from '../models/FileData.js';
@@ -27,16 +28,19 @@ const upload = multer({
 // Check File Type
 function checkFileType(file, cb) {
   // Allowed ext
-  const filetypes = /xlsx|xls/;
+  const filetypes = /xlsx|xls|csv/;
   // Check ext
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
   // Check mime
-  const mimetype = file.mimetype === 'application/vnd.ms-excel' || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const mimetype = file.mimetype === 'application/vnd.ms-excel' || 
+                   file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                   file.mimetype === 'text/csv' || 
+                   file.mimetype === 'application/csv';
 
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb('Error: Excel Files Only!');
+    cb('Error: Excel or CSV Files Only!');
   }
 }
 
@@ -64,6 +68,11 @@ router.post('/', verifyToken, (req, res) => {
       });
 
       await newFileData.save();
+      
+      // Clean up the temporary physical file to prevent storage leaks
+      fs.unlink(req.file.path, (unlinkErr) => {
+        if (unlinkErr) console.error("Error deleting temp file:", unlinkErr);
+      });
 
       res.json({
         message: 'File uploaded, parsed, and saved successfully',
@@ -72,6 +81,10 @@ router.post('/', verifyToken, (req, res) => {
       });
     } catch (error) {
       console.error(error);
+      // Ensure file is deleted even if parsing/saving fails
+      if (req.file && req.file.path) {
+        fs.unlink(req.file.path, () => {});
+      }
       res.status(500).send('Server error');
     }
   });

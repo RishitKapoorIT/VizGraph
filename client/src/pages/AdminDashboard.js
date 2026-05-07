@@ -141,7 +141,7 @@ const AdminDashboard = () => {
         <div className="mb-12">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
+              <div className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.5)]">
                 <FiShield className="text-white" size={32} />
               </div>
               <div>
@@ -181,7 +181,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl p-6 border border-blue-200 dark:border-gray-700">
+        <div className="mb-8 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-gray-700/50 shadow-lg">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button 
@@ -312,7 +312,7 @@ const AdminDashboard = () => {
           {/* Activity Feed */}
           <div className="lg:col-span-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Recent Activity</h2>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Live Feed</h3>
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
@@ -344,7 +344,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Chart Type Distribution */}
           {dashboardData.stats.chartTypeStats && dashboardData.stats.chartTypeStats.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Chart Type Distribution</h3>
                 <FiPieChart className="text-purple-600 dark:text-purple-400" size={24} />
@@ -382,7 +382,7 @@ const AdminDashboard = () => {
 
           {/* Top Users */}
           {dashboardData.stats.topUsers && dashboardData.stats.topUsers.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Most Active Users</h3>
                 <FiTrendingUp className="text-green-600 dark:text-green-400" size={24} />

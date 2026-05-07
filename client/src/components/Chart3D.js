@@ -1,7 +1,7 @@
 import React from 'react';
 import ThreeChart3D from './ThreeChart3D';
 
-const Chart3D = ({ data, type, xAxis, yAxis, zAxis, title }) => {
+const Chart3D = ({ data, type, xAxis, yAxis, zAxis, title, onExportReady }) => {
   // Convert data to format expected by ThreeChart3D
   const processedData = React.useMemo(() => {
     if (!data || !Array.isArray(data) || !xAxis || !yAxis) return [];
@@ -21,6 +21,8 @@ const Chart3D = ({ data, type, xAxis, yAxis, zAxis, title }) => {
         data={processedData}
         chartType={type}
         title={title || '3D Chart'}
+        axisLabels={{ x: xAxis, y: yAxis, z: zAxis }}
+        onExportReady={onExportReady}
       />
     </div>
   );

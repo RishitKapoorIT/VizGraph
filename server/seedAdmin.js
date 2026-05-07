@@ -16,7 +16,7 @@ const seedAdmin = async () => {
     console.log('Removed existing admin user if any.');
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('QW12rk', salt);
+    const hashedPassword = await bcrypt.hash('admin123', salt);
 
     const adminUser = new User({
       name: 'Admin',

@@ -433,13 +433,14 @@ function AdminDataManagement() {
                         <span className="text-gray-600 dark:text-gray-400">Most Popular Chart</span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {analyses.length > 0 ? (
-                            Object.entries(
-                              analyses.reduce((acc, a) => {
-                                acc[a.chartType] = (acc[a.chartType] || 0) + 1;
-                                return acc;
-                              }, {})
-                            ).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'
-                          ) : 'N/A'}
+                                Object.entries(
+                                  analyses.reduce((acc, a) => {
+                                    const type = a?.settings?.chartType || 'unknown';
+                                    acc[type] = (acc[type] || 0) + 1;
+                                    return acc;
+                                  }, {})
+                                ).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A'
+                              ) : 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -559,6 +560,7 @@ function AdminDataManagement() {
                 </div>
               </div>
             )}
+            {activeTab === 'overview' && (
               <div className="space-y-8">
                 {/* Platform Overview Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -633,7 +635,7 @@ function AdminDataManagement() {
                   </div>
                 )}
               </div>
-            ){'}'}
+            )}
 
             {/* Files Tab */}
             {activeTab === 'files' && (

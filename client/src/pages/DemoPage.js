@@ -141,6 +141,19 @@ const DemoPage = () => {
             Watch how easy it is to transform your data into beautiful visualizations, or try it yourself with our sample data.
           </p>
 
+          {/* Sample-only notice */}
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4">
+              <p className="text-sm md:text-base text-gray-800 dark:text-gray-200">
+                This is a sample demo page. Sign up to generate AI summaries and save your analyses.
+              </p>
+              <div className="mt-3 flex justify-center gap-3">
+                <button onClick={() => navigate('/register')} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Sign up</button>
+                <button onClick={() => navigate('/login')} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700">Log in</button>
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
             <button
               onClick={startDemo}

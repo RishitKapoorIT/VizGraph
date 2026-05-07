@@ -7,7 +7,7 @@ const QuickStatsCard = ({ title, value, icon: Icon, color, subtitle, trend = nul
   const colors = getColorClasses(color);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">{title}</p>

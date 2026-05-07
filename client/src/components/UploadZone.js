@@ -64,10 +64,11 @@ export default function UploadZone({ onFileUpload }) {
     <div className="w-full max-w-3xl mx-auto">
       <div
         {...getRootProps()}
-        className={`relative p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm
-        ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-105' : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'}
-        ${uploadedFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
+        className={`relative p-16 border-2 border-dashed rounded-[2rem] cursor-pointer transition-all duration-500 bg-white/40 dark:bg-gray-800/40 backdrop-blur-2xl shadow-xl hover:shadow-2xl overflow-hidden group
+        ${isDragActive ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-900/30 scale-105 shadow-[0_0_30px_rgba(168,85,247,0.4)]' : 'border-gray-300/50 dark:border-gray-600/50 hover:border-purple-400 dark:hover:border-purple-500'}
+        ${uploadedFile ? 'border-green-500 bg-green-50/50 dark:bg-green-900/30 shadow-[0_0_30px_rgba(34,197,94,0.4)]' : ''}`}
       >
+        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent dark:from-white/5 dark:to-transparent pointer-events-none"></div>
         <input {...getInputProps()} />
         
         {uploadedFile ? (

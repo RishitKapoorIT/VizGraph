@@ -141,7 +141,7 @@ function Login() {
         <ThemeToggle />
       </div>
       
-      <div className="w-full max-w-md p-8 space-y-6 bg-white/90 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/50 relative z-10">
         <div className="text-center">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">Welcome to VizGraph</h2>
           <p className="mt-2 text-gray-500 dark:text-gray-400">Sign in to continue</p>
@@ -185,10 +185,11 @@ function Login() {
           <div>
             <button
               type="submit" disabled={isLoading}
-              className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-colors disabled:bg-blue-800 disabled:cursor-not-allowed text-white"
+              className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:scale-[1.02] disabled:bg-gray-500 disabled:cursor-not-allowed text-white relative overflow-hidden group"
             >
-              <FiLogIn />
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shimmer"></div>
+              <FiLogIn className="relative z-10" />
+              <span className="relative z-10">{isLoading ? 'Signing In...' : 'Sign In'}</span>
             </button>
           </div>
           
@@ -208,7 +209,7 @@ function Login() {
         <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-300 dark:border-gray-700">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">🚀 First Time Setup</h3>
           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-            Click this button once to create the initial admin account (admin@admin.com / password)
+            Click this button once to create the initial admin account (admin@admin.com / admin123)
           </p>
           <button
             onClick={handleSetupAdmin}

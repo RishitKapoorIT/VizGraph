@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Environment files
+.env
+.env.local
+
+# Server uploads
+server/uploads/
+*.xlsx
+*.csv
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build directories
+build/
+dist/
+client/build/

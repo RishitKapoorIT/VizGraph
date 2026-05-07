@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bar, Line, Pie, Doughnut, PolarArea, Radar, Scatter, Bubble } from 'react-chartjs-2';
 import {
@@ -55,6 +55,10 @@ const ChartStudio = () => {
   const [yAxis, setYAxis] = useState('');
   const [zAxis, setZAxis] = useState('');
   const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble', 'bar3d', 'scatter3d', 'pie3d', 'doughnut3d', 'surface3d'
+  
+  // Customization state
+  const [colorTheme, setColorTheme] = useState('blue');
+  const [showGrid, setShowGrid] = useState(true);
 
   // Analysis state
   const [analysisName, setAnalysisName] = useState('My Analysis');
@@ -65,21 +69,36 @@ const ChartStudio = () => {
   const [aiSummary, setAiSummary] = useState('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState('');
+  // Sanitize AI summary text to remove Markdown (#, *, _, **)
+  const sanitizeSummaryText = (text) => {
+    if (!text || typeof text !== 'string') return '';
+    let t = text
+      // Remove heading markers at start of line (e.g., ## Title)
+      .replace(/^\s*#+\s*/gm, '')
+      // Remove bold/italic markers
+      .replace(/\*\*|__|\*|_/g, '')
+      // Remove triple backtick fences
+      .replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, ''));
+    // Trim right spaces per line and overall
+    t = t.split('\n').map(l => l.replace(/\s+$/,'')).join('\n').trim();
+    return t;
+  };
 
   const chartRef = useRef(null);
+  const threeExporterRef = useRef(null);
 
   // Sample data for demonstration
-  const sampleData = [
+  const sampleData = useMemo(() => ([
     { Month: 'January', Sales: 4500, Revenue: 45000, Customers: 120 },
     { Month: 'February', Sales: 5200, Revenue: 52000, Customers: 140 },
     { Month: 'March', Sales: 4800, Revenue: 48000, Customers: 135 },
     { Month: 'April', Sales: 6100, Revenue: 61000, Customers: 160 },
     { Month: 'May', Sales: 7200, Revenue: 72000, Customers: 180 },
     { Month: 'June', Sales: 6800, Revenue: 68000, Customers: 170 }
-  ];
+  ]), []);
 
   // Load sample data function
-  const loadSampleData = () => {
+  const loadSampleData = useCallback(() => {
     const newHeaders = Object.keys(sampleData[0]);
     const newXAxis = 'Month';
     const newYAxis = 'Sales';
@@ -91,7 +110,7 @@ const ChartStudio = () => {
     setYAxis(newYAxis);
     setZAxis(newZAxis);
     setError('');
-  };
+  }, [sampleData]);
 
   // Load analysis data if editing
   useEffect(() => {
@@ -102,6 +121,8 @@ const ChartStudio = () => {
       setYAxis(editingAnalysis.settings.yAxis);
       setZAxis(editingAnalysis.settings.zAxis || '');
       setChartType(editingAnalysis.settings.chartType);
+      setColorTheme(editingAnalysis.settings.colorTheme || 'blue');
+      setShowGrid(editingAnalysis.settings.showGrid !== false);
       setFileId(editingAnalysis.fileData);
       
       // Fetch the file data
@@ -117,11 +138,11 @@ const ChartStudio = () => {
       };
 
       loadFileData();
-    } else if (isDemoMode && demoFile) {
-      // Handle demo mode - auto-load the demo file
-      handleFileUpload(demoFile);
+    } else if (isDemoMode) {
+      // Demo mode: avoid backend calls and just load built-in sample data
+      loadSampleData();
     }
-  }, [editingAnalysis, isDemoMode, demoFile]);
+  }, [editingAnalysis, isDemoMode, demoFile, loadSampleData]);
 
   const handleFileUpload = async (fileToUpload) => {
     if (!fileToUpload) {
@@ -165,6 +186,27 @@ const ChartStudio = () => {
     const isPieType = ['pie', 'doughnut', 'polarArea'].includes(chartType);
     const isScatterBubble = ['scatter', 'bubble'].includes(chartType);
 
+    const getColors = (theme, count) => {
+      const themes = {
+        blue: { bg: 'rgba(59, 130, 246, 0.6)', border: 'rgba(59, 130, 246, 1)', point: 'rgba(59, 130, 246, 1)' },
+        purple: { bg: 'rgba(147, 51, 234, 0.6)', border: 'rgba(147, 51, 234, 1)', point: 'rgba(147, 51, 234, 1)' },
+        green: { bg: 'rgba(34, 197, 94, 0.6)', border: 'rgba(34, 197, 94, 1)', point: 'rgba(34, 197, 94, 1)' },
+        orange: { bg: 'rgba(249, 115, 22, 0.6)', border: 'rgba(249, 115, 22, 1)', point: 'rgba(249, 115, 22, 1)' },
+        red: { bg: 'rgba(239, 68, 68, 0.6)', border: 'rgba(239, 68, 68, 1)', point: 'rgba(239, 68, 68, 1)' }
+      };
+      
+      if (theme === 'colorful' || isPieType) {
+        return {
+          bg: Array.from({ length: count }).map((_, i) => `hsl(${(i * 360) / count}, 70%, 60%)`),
+          border: Array.from({ length: count }).map(() => isDark ? '#1f2937' : '#ffffff'),
+          point: Array.from({ length: count }).map((_, i) => `hsl(${(i * 360) / count}, 70%, 60%)`)
+        };
+      }
+      return themes[theme] || themes.blue;
+    };
+    
+    const colors = getColors(colorTheme, data.length);
+
     // For scatter and bubble charts, we need different data structure
     if (isScatterBubble) {
       return {
@@ -176,8 +218,8 @@ const ChartStudio = () => {
               y: item[yAxis],
               ...(chartType === 'bubble' && { r: Math.abs(item[yAxis]) / 10 || 5 })
             })),
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: colors.bg,
+            borderColor: colors.border,
             borderWidth: 1,
           },
         ],
@@ -190,33 +232,38 @@ const ChartStudio = () => {
         {
           label: yAxis,
           data: data.map(item => item[yAxis]),
-          backgroundColor: isPieType 
-            ? data.map((_, i) => `hsl(${(i * 360) / data.length}, 70%, 60%)`)
-            : chartType === 'radar'
-            ? 'rgba(54, 162, 235, 0.2)'
-            : 'rgba(54, 162, 235, 0.6)',
-          borderColor: isPieType 
-            ? data.map(() => '#fff')
-            : 'rgba(54, 162, 235, 1)',
+          backgroundColor: chartType === 'radar' ? (Array.isArray(colors.bg) ? colors.bg[0] : colors.bg).replace('0.6', '0.2') : colors.bg,
+          borderColor: colors.border,
           borderWidth: 1,
           ...(chartType === 'radar' && { 
             fill: true,
-            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+            pointBackgroundColor: Array.isArray(colors.point) ? colors.point[0] : colors.point,
+            pointBorderColor: isDark ? '#1f2937' : '#ffffff',
+            pointHoverBackgroundColor: isDark ? '#1f2937' : '#ffffff',
+            pointHoverBorderColor: Array.isArray(colors.point) ? colors.point[0] : colors.point
           })
         },
       ],
     };
-  }, [data, xAxis, yAxis, chartType]);
+  }, [data, xAxis, yAxis, chartType, colorTheme, isDark]);
 
   const handleDownloadPNG = () => {
-    if (chartRef.current) {
+    const is3D = ['bar3d', 'scatter3d', 'pie3d', 'doughnut3d', 'surface3d'].includes(chartType);
+    if (!is3D && chartRef.current) {
       const link = document.createElement('a');
       link.download = `${analysisName || 'chart'}.png`;
       link.href = chartRef.current.toBase64Image();
       link.click();
+      return;
+    }
+    if (is3D && typeof threeExporterRef.current === 'function') {
+      const dataUrl = threeExporterRef.current({ pixelRatio: 2, type: 'image/png' }) || threeExporterRef.current();
+      if (dataUrl) {
+        const link = document.createElement('a');
+        link.download = `${analysisName || 'chart'}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
     }
   };
 
@@ -266,7 +313,9 @@ const ChartStudio = () => {
         xAxis,
         yAxis,
         ...(is3DChart && { zAxis }),
-        chartType
+        chartType,
+        colorTheme,
+        showGrid
       }
     };
 
@@ -295,7 +344,7 @@ const ChartStudio = () => {
       '',
       'AI Generated Summary:',
       '=' + '='.repeat(50),
-      aiSummary,
+      sanitizeSummaryText(aiSummary),
       '',
       'End of Summary'
     ].join('\n');
@@ -359,8 +408,8 @@ const ChartStudio = () => {
         ...(is3DChart && { zAxis })
       };
 
-      const response = await generateAISummary(data, chartConfig);
-      setAiSummary(response.data.summary);
+  const response = await generateAISummary(data, chartConfig);
+  setAiSummary(sanitizeSummaryText(response.data.summary));
     } catch (err) {
       console.error('AI Summary Error:', err);
       setSummaryError(
@@ -381,9 +430,18 @@ const ChartStudio = () => {
       polarArea: 'Polar Area Chart',
       radar: 'Radar Chart',
       scatter: 'Scatter Plot',
-      bubble: 'Bubble Chart'
+      bubble: 'Bubble Chart',
+      bar3d: '3D Bar Chart',
+      scatter3d: '3D Scatter Plot',
+      pie3d: '3D Pie Chart',
+      doughnut3d: '3D Doughnut Chart',
+      surface3d: '3D Surface Chart'
     };
-    return `${chartNames[chartType]} - ${yAxis} by ${xAxis}`;
+    const base = chartNames[chartType] || 'Chart';
+    if (['bar3d','scatter3d','pie3d','doughnut3d','surface3d'].includes(chartType) && zAxis) {
+      return `${base} - ${yAxis} by ${xAxis}${zAxis ? ` (Z: ${zAxis})` : ''}`;
+    }
+    return `${base} - ${yAxis} by ${xAxis}`;
   };
 
   const renderChart = () => {
@@ -434,6 +492,7 @@ const ChartStudio = () => {
               color: gridColor
             },
             grid: {
+              display: showGrid,
               color: gridColor
             },
             pointLabels: {
@@ -449,6 +508,7 @@ const ChartStudio = () => {
             type: 'linear',
             position: 'bottom',
             grid: {
+              display: showGrid,
               color: gridColor
             },
             ticks: {
@@ -457,6 +517,7 @@ const ChartStudio = () => {
           },
           y: {
             grid: {
+              display: showGrid,
               color: gridColor
             },
             ticks: {
@@ -466,6 +527,7 @@ const ChartStudio = () => {
         } : !['pie', 'doughnut', 'polarArea'].includes(chartType) ? {
           x: {
             grid: {
+              display: showGrid,
               color: gridColor
             },
             ticks: {
@@ -474,6 +536,7 @@ const ChartStudio = () => {
           },
           y: {
             grid: {
+              display: showGrid,
               color: gridColor
             },
             ticks: {
@@ -503,15 +566,15 @@ const ChartStudio = () => {
         case 'bubble':
           return <Bubble ref={chartRef} data={chartData} options={options} />;
         case 'bar3d':
-          return <Chart3D type="bar" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} />;
+          return <Chart3D type="bar" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} onExportReady={(fn) => (threeExporterRef.current = fn)} />;
         case 'scatter3d':
-          return <Chart3D type="scatter" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} />;
+          return <Chart3D type="scatter" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} onExportReady={(fn) => (threeExporterRef.current = fn)} />;
         case 'pie3d':
-          return <Chart3D type="pie" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} />;
+          return <Chart3D type="pie" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} onExportReady={(fn) => (threeExporterRef.current = fn)} />;
         case 'doughnut3d':
-          return <Chart3D type="doughnut" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} />;
+          return <Chart3D type="doughnut" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} onExportReady={(fn) => (threeExporterRef.current = fn)} />;
         case 'surface3d':
-          return <Chart3D type="surface" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} />;
+          return <Chart3D type="surface" data={data} xAxis={xAxis} yAxis={yAxis} zAxis={zAxis} title={getChartTitle()} onExportReady={(fn) => (threeExporterRef.current = fn)} />;
         default:
           return (
             <div className="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
@@ -560,7 +623,7 @@ const ChartStudio = () => {
       
       {/* Simplified Header */}
       <div className="z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -588,12 +651,30 @@ const ChartStudio = () => {
         </div>
       </div>
 
+      {/* Demo mode banner */}
+      {isDemoMode && (
+        <div className="max-w-7xl mx-auto px-6 mt-4">
+          <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 md:p-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <p className="text-blue-800 dark:text-blue-300 font-semibold">Demo mode</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">This is a sample experience. Sign up to generate AI summaries and save your analyses.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => navigate('/register')} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Sign up</button>
+                <button onClick={() => navigate('/login')} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700">Log in</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="p-6">
       {!data ? (
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Create Your Visualization
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6 tracking-tight">
+              Create Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_auto] animate-gradient">Visualization</span>
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
               Upload your data file to get started with beautiful charts and graphs
@@ -626,7 +707,7 @@ const ChartStudio = () => {
             </p>
           </div>
           
-          {uploading && (
+          {uploading && !isDemoMode && (
             <div className="mt-8 text-center">
               <div className="inline-flex items-center gap-3 px-6 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
@@ -634,7 +715,7 @@ const ChartStudio = () => {
               </div>
             </div>
           )}
-          {error && (
+          {error && !isDemoMode && (
             <div className="mt-8 max-w-2xl mx-auto">
               <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
                 <p className="text-red-600 dark:text-red-400 text-center font-medium">{error}</p>
@@ -645,7 +726,7 @@ const ChartStudio = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Controls Panel */}
-          <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="lg:col-span-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50">
             <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Chart Controls</h3>
             
             {/* X-Axis Selector */}
@@ -688,8 +769,42 @@ const ChartStudio = () => {
                 </select>
               </div>
             )}
+            
+            {/* Customization Options */}
+            <div className="mb-6 bg-white/50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-inner">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Customization</h4>
+              
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-2">Color Theme</label>
+                <div className="flex flex-wrap gap-2">
+                  {['blue', 'purple', 'green', 'orange', 'red', 'colorful'].map(theme => (
+                    <button
+                      key={theme}
+                      onClick={() => setColorTheme(theme)}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform ${colorTheme === theme ? 'scale-110 border-gray-900 dark:border-white shadow-md' : 'border-transparent hover:scale-105 shadow-sm'}`}
+                      style={{
+                        background: theme === 'colorful' ? 'linear-gradient(to right, #3b82f6, #a855f7, #ef4444)' : 
+                          theme === 'blue' ? '#3b82f6' : 
+                          theme === 'purple' ? '#a855f7' : 
+                          theme === 'green' ? '#22c55e' : 
+                          theme === 'orange' ? '#f97316' : '#ef4444'
+                      }}
+                      title={theme.charAt(0).toUpperCase() + theme.slice(1)}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Show Grid Lines</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={showGrid} onChange={() => setShowGrid(!showGrid)} />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
 
-            {/* Chart Type Selector */}
+            {/* Chart Types */}
             <div>
               <h4 className="block mb-2 font-semibold text-gray-700 dark:text-gray-300">Chart Type</h4>
               
@@ -871,72 +986,88 @@ const ChartStudio = () => {
             {/* Save and Download Buttons */}
             <div className="mt-6 flex flex-col gap-4">
               <button 
-                onClick={handleSaveAnalysis} 
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors shadow-sm"
+                onClick={isDemoMode ? () => navigate('/register') : handleSaveAnalysis} 
+                disabled={isDemoMode}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden group ${isDemoMode ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-[1.02] text-white shadow-lg'}`}
               >
-                <FiSave /> {isEditing ? 'Update Analysis' : 'Save Analysis'}
+                {!isDemoMode && <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shimmer"></div>}
+                <FiSave className="relative z-10" /> <span className="relative z-10">{isEditing ? 'Update Analysis' : 'Save Analysis'}{isDemoMode ? ' (Sign up required)' : ''}</span>
               </button>
               
               <button 
-                onClick={handleGenerateAISummary}
-                disabled={!data || isGeneratingSummary}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-sm"
+                onClick={isDemoMode ? () => navigate('/register') : handleGenerateAISummary}
+                disabled={isDemoMode || !data || isGeneratingSummary}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden group ${isDemoMode ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 hover:shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:scale-[1.02] text-white shadow-lg'}`}
               >
+                {(!isDemoMode && !isGeneratingSummary && data) && <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shimmer"></div>}
                 {isGeneratingSummary ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Generating...
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white relative z-10"></div>
+                    <span className="relative z-10">Generating...</span>
                   </>
                 ) : (
                   <>
-                    <FiZap /> Generate AI Summary
+                    <FiZap className="relative z-10" /> <span className="relative z-10">Generate AI Summary</span>
                   </>
                 )}
               </button>
+              {isDemoMode && (
+                <div className="text-xs text-gray-600 dark:text-gray-300 text-center -mt-2">
+                  Sign up to enable saving and AI summaries
+                </div>
+              )}
               
               {/* Download Options */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Download Options</p>
+              <div className="mt-8 bg-white/50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-inner">
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <FiDownload className="text-blue-500" /> Export Your Work
+                </p>
                 
-                <button 
-                  onClick={handleDownloadPNG}
-                  disabled={!chartData}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
-                >
-                  <FiDownload /> PNG Chart
-                </button>
-                
-                <button 
-                  onClick={handleDownloadCSV}
-                  disabled={!data || data.length === 0}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
-                >
-                  <FiDownload /> CSV Data
-                </button>
-                
-                <button 
-                  onClick={handleDownloadJSON}
-                  disabled={!data || !analysisName}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
-                >
-                  <FiDownload /> JSON Analysis
-                </button>
-                
-                <button 
-                  onClick={handleDownloadSummary}
-                  disabled={!aiSummary}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm text-sm"
-                >
-                  <FiDownload /> AI Summary
-                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={handleDownloadPNG}
+                    disabled={!chartData}
+                    className="flex flex-col items-center justify-center gap-1 p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 dark:border-gray-700 rounded-xl transition-all shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300 group"
+                  >
+                    <FiDownload className="text-green-500 group-hover:scale-110 transition-transform" size={20} /> 
+                    <span className="text-xs font-semibold mt-1">Image (PNG)</span>
+                  </button>
+                  
+                  <button 
+                    onClick={handleDownloadCSV}
+                    disabled={!data || data.length === 0}
+                    className="flex flex-col items-center justify-center gap-1 p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 dark:border-gray-700 rounded-xl transition-all shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300 group"
+                  >
+                    <FiDownload className="text-blue-500 group-hover:scale-110 transition-transform" size={20} /> 
+                    <span className="text-xs font-semibold mt-1">Data (CSV)</span>
+                  </button>
+                  
+                  <button 
+                    onClick={handleDownloadJSON}
+                    disabled={!data || !analysisName}
+                    className="flex flex-col items-center justify-center gap-1 p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 dark:border-gray-700 rounded-xl transition-all shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300 group"
+                  >
+                    <FiDownload className="text-indigo-500 group-hover:scale-110 transition-transform" size={20} /> 
+                    <span className="text-xs font-semibold mt-1">Save (JSON)</span>
+                  </button>
+                  
+                  <button 
+                    onClick={handleDownloadSummary}
+                    disabled={!aiSummary}
+                    className="flex flex-col items-center justify-center gap-1 p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200 dark:border-gray-700 rounded-xl transition-all shadow-sm hover:shadow-md text-gray-700 dark:text-gray-300 group"
+                  >
+                    <FiDownload className="text-purple-500 group-hover:scale-110 transition-transform" size={20} /> 
+                    <span className="text-xs font-semibold mt-1">AI Report</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Chart Display */}
-          <div className="lg:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 min-h-[600px]">            
+          <div className="lg:col-span-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 min-h-[600px] flex flex-col">            
             {/* Chart Container */}
-            <div className="w-full h-[500px] bg-white dark:bg-gray-900 rounded-lg flex items-center justify-center mb-6">
+            <div className="w-full h-[500px] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/80 dark:to-gray-800/80 rounded-xl flex items-center justify-center mb-6 shadow-inner border border-gray-200/50 dark:border-gray-700/50">
               <div className="w-full h-full p-4">
                 {chartData ? (
                   <div className="w-full h-full min-h-[400px] relative">
@@ -954,10 +1085,13 @@ const ChartStudio = () => {
 
             {/* AI Summary Display */}
             {aiSummary && (
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-700">
-                <div className="flex items-center gap-2 mb-4">
-                  <FiZap className="text-purple-600 dark:text-purple-400" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Summary</h3>
+              <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-md p-6 rounded-xl border border-purple-200/50 dark:border-purple-500/30 shadow-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="flex items-center gap-3 mb-4 relative z-10">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg shadow-md">
+                    <FiZap className="text-white" size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent">AI Insights</h3>
                 </div>
                 <div className="prose dark:prose-invert max-w-none">
                   <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -968,7 +1102,7 @@ const ChartStudio = () => {
             )}
 
             {/* AI Summary Error Display */}
-            {summaryError && (
+            {summaryError && !isDemoMode && (
               <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700">
                 <p className="text-red-700 dark:text-red-400 text-sm">{summaryError}</p>
               </div>

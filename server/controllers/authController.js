@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 
 export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
@@ -89,19 +90,40 @@ export const googleLogin = async (req, res) => {
     const { token } = req.body;
 
     try {
-        // For now, we'll decode the Google JWT token manually
-        // In production, you should verify the token with Google's API
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        
-        const decoded = JSON.parse(jsonPayload);
-        const { email, name } = decoded;
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy_client_id_for_now');
+        let email, name;
+
+        try {
+            // Verify the token with Google
+            const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+            const payload = ticket.getPayload();
+            email = payload.email;
+            name = payload.name;
+        } catch (verifyError) {
+            console.error('Google token verification failed:', verifyError);
+            
+            // Fallback to manual decode ONLY for testing if GOOGLE_CLIENT_ID is not configured
+            // In a real production environment, you should strictly reject unverified tokens.
+            if (!process.env.GOOGLE_CLIENT_ID) {
+                console.warn('WARNING: Skipping Google Token Verification because GOOGLE_CLIENT_ID is missing.');
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const decoded = JSON.parse(jsonPayload);
+                email = decoded.email;
+                name = decoded.name;
+            } else {
+                return res.status(400).json({ msg: 'Invalid Google token' });
+            }
+        }
 
         if (!email || !name) {
-            return res.status(400).json({ msg: 'Invalid Google token' });
+            return res.status(400).json({ msg: 'Invalid Google token payload' });
         }
 
         let user = await User.findOne({ email });
@@ -128,14 +150,13 @@ export const googleLogin = async (req, res) => {
             payload,
             process.env.JWT_SECRET,
             { expiresIn: '5h' },
-            (err, token) => {
-                if (err) {
-                    throw err;
-                }
-                res.json({ token });
+            (err, signedToken) => {
+                if (err) throw err;
+                res.json({ token: signedToken });
             }
         );
     } catch (err) {
+        console.error('Google login error:', err);
         res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
