@@ -2,15 +2,16 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import xlsx from 'xlsx';
 import verifyToken from '../middleware/verifyToken.js';
 import FileData from '../models/FileData.js';
 
 const router = express.Router();
 
-// Set up storage for uploaded files
+// Set up storage for uploaded files in the OS temp directory (Vercel serverless compatibility)
 const storage = multer.diskStorage({
-  destination: './uploads/',
+  destination: os.tmpdir(),
   filename: function (req, file, cb) {
     cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
   }
