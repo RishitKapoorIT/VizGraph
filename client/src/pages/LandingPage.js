@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUpload, FiBarChart2, FiTrendingUp, FiPieChart, FiZap, FiArrowRight } from 'react-icons/fi';
+import { FiUpload, FiBarChart2, FiTrendingUp, FiZap, FiArrowRight } from 'react-icons/fi';
 import ThemeToggle from '../components/ThemeToggle';
 import FloatingGraphsBackground from '../components/FloatingGraphsBackground';
 

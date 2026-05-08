@@ -64,7 +64,6 @@ const ChartPreview = ({ analysis }) => {
 
     const isPieType = ['pie', 'doughnut', 'polarArea', 'pie3d', 'doughnut3d'].includes(analysis.settings.chartType);
     const isScatterBubble = ['scatter', 'bubble', 'scatter3d'].includes(analysis.settings.chartType);
-    const is3DChart = ['bar3d', 'scatter3d', 'surface3d', 'pie3d', 'doughnut3d'].includes(analysis.settings.chartType);
 
     if (isScatterBubble) {
       return {

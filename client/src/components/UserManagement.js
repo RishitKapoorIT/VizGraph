@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
 import FloatingGraphsBackground from './FloatingGraphsBackground';
 import ThemeToggle from './ThemeToggle';
 import { 
@@ -32,7 +31,7 @@ const UserManagement = () => {
     });
 
     // Pagination
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage] = useState(1);
     const usersPerPage = 10;
 
     const handleBack = () => {
@@ -107,7 +106,6 @@ const UserManagement = () => {
     const indexOfLastUser = currentPage * usersPerPage;
     const indexOfFirstUser = indexOfLastUser - usersPerPage;
     const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
     const getRoleIcon = (role) => {
         switch (role) {
